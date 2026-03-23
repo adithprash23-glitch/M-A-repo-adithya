@@ -16,7 +16,7 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 
 # ── Config ───────────────────────────────────────────────────────────────────
 
-PORT = int(__import__('os').environ.get('PORT', 3456))
+PORT = int(__import__('os').environ.get('PORT', 8000))
 CACHE_TTL = 300  # 5 minutes
 
 FEEDS = [
@@ -321,9 +321,9 @@ class Handler(BaseHTTPRequestHandler):
 
 
 if __name__ == "__main__":
-    print(f"[DealFlow] Starting server on http://localhost:{PORT}")
+    print(f"[DealFlow] Starting server on http://0.0.0.0:{PORT}")
     print(f"[DealFlow] Pre-fetching news…")
     # Pre-warm cache in background
     threading.Thread(target=get_news, daemon=True).start()
-    server = HTTPServer(("", PORT), Handler)
+    server = HTTPServer(("0.0.0.0", PORT), Handler)
     server.serve_forever()

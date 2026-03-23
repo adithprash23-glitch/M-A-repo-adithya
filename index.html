@@ -1,0 +1,872 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DealFlow — M&A Intelligence</title>
+  <style>
+    :root {
+      --bg: #0a0d14;
+      --surface: #111520;
+      --surface2: #181d2e;
+      --border: #1e2540;
+      --accent: #3b82f6;
+      --accent2: #6366f1;
+      --green: #10b981;
+      --yellow: #f59e0b;
+      --red: #ef4444;
+      --text: #e2e8f0;
+      --muted: #64748b;
+      --muted2: #94a3b8;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    /* ── Header ── */
+    header {
+      position: sticky; top: 0; z-index: 100;
+      background: rgba(10,13,20,.85);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      padding: 0 24px;
+      display: flex; align-items: center; justify-content: space-between;
+      height: 60px;
+    }
+
+    .logo {
+      display: flex; align-items: center; gap: 10px;
+      font-size: 1.2rem; font-weight: 700; letter-spacing: -.5px;
+    }
+    .logo-icon {
+      width: 32px; height: 32px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: .8rem; font-weight: 900;
+    }
+
+    .header-right { display: flex; align-items: center; gap: 12px; }
+
+    .live-badge {
+      display: flex; align-items: center; gap: 6px;
+      background: rgba(16,185,129,.1); border: 1px solid rgba(16,185,129,.3);
+      color: var(--green); font-size: .75rem; font-weight: 600;
+      padding: 4px 10px; border-radius: 20px;
+    }
+    .live-dot {
+      width: 6px; height: 6px; background: var(--green);
+      border-radius: 50%; animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0%,100% { opacity:1; } 50% { opacity:.4; }
+    }
+
+    .refresh-btn {
+      background: var(--surface2); border: 1px solid var(--border);
+      color: var(--muted2); padding: 6px 14px; border-radius: 8px;
+      cursor: pointer; font-size: .8rem; transition: all .15s;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .refresh-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .refresh-btn.spinning svg { animation: spin 1s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Stats bar ── */
+    .stats-bar {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 14px 24px;
+      display: flex; gap: 32px; overflow-x: auto;
+    }
+    .stat { white-space: nowrap; }
+    .stat-label { font-size: .7rem; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; margin-bottom: 2px; }
+    .stat-value { font-size: 1.1rem; font-weight: 700; }
+    .stat-value.green { color: var(--green); }
+    .stat-value.blue { color: var(--accent); }
+    .stat-value.yellow { color: var(--yellow); }
+
+    /* ── Layout ── */
+    .main {
+      max-width: 1400px; margin: 0 auto;
+      padding: 24px;
+      display: grid;
+      grid-template-columns: 260px 1fr 280px;
+      gap: 20px;
+    }
+
+    /* ── Sidebar ── */
+    .sidebar-section {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 12px; padding: 16px; margin-bottom: 16px;
+    }
+    .sidebar-title {
+      font-size: .7rem; font-weight: 600; color: var(--muted);
+      text-transform: uppercase; letter-spacing: .1em; margin-bottom: 12px;
+    }
+
+    .filter-group { margin-bottom: 8px; }
+    .filter-label {
+      font-size: .78rem; color: var(--muted2); margin-bottom: 6px; display: block;
+    }
+
+    .filter-pills { display: flex; flex-wrap: wrap; gap: 6px; }
+    .pill {
+      font-size: .72rem; padding: 4px 10px; border-radius: 20px;
+      border: 1px solid var(--border); color: var(--muted2);
+      cursor: pointer; transition: all .15s; background: var(--surface2);
+    }
+    .pill:hover { border-color: var(--accent); color: var(--accent); }
+    .pill.active { background: rgba(59,130,246,.15); border-color: var(--accent); color: var(--accent); }
+
+    .search-box {
+      width: 100%;
+      background: var(--surface2); border: 1px solid var(--border);
+      color: var(--text); padding: 8px 12px; border-radius: 8px;
+      font-size: .82rem; outline: none; transition: border-color .15s;
+    }
+    .search-box:focus { border-color: var(--accent); }
+    .search-box::placeholder { color: var(--muted); }
+
+    /* ── Feed ── */
+    .feed-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 16px;
+    }
+    .feed-title { font-size: 1rem; font-weight: 600; }
+    .feed-count { font-size: .78rem; color: var(--muted); }
+
+    .sort-select {
+      background: var(--surface2); border: 1px solid var(--border);
+      color: var(--muted2); padding: 5px 10px; border-radius: 7px;
+      font-size: .75rem; cursor: pointer; outline: none;
+    }
+
+    /* ── Cards ── */
+    .card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 12px; padding: 18px; margin-bottom: 12px;
+      cursor: pointer; transition: all .2s; position: relative; overflow: hidden;
+    }
+    .card::before {
+      content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px;
+      background: var(--accent); opacity: 0; transition: opacity .2s;
+    }
+    .card:hover { border-color: rgba(59,130,246,.4); transform: translateY(-1px); box-shadow: 0 4px 20px rgba(0,0,0,.3); }
+    .card:hover::before { opacity: 1; }
+
+    .card-top {
+      display: flex; align-items: flex-start; justify-content: space-between; gap: 12px;
+      margin-bottom: 10px;
+    }
+    .card-source {
+      font-size: .68rem; font-weight: 600; color: var(--muted);
+      text-transform: uppercase; letter-spacing: .08em;
+    }
+    .card-meta { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+
+    .tag {
+      font-size: .67rem; font-weight: 600; padding: 2px 8px; border-radius: 4px;
+      text-transform: uppercase; letter-spacing: .05em;
+    }
+    .tag-deal { background: rgba(59,130,246,.15); color: var(--accent); }
+    .tag-rumor { background: rgba(245,158,11,.12); color: var(--yellow); }
+    .tag-closed { background: rgba(16,185,129,.12); color: var(--green); }
+    .tag-blocked { background: rgba(239,68,68,.12); color: var(--red); }
+
+    .card-title {
+      font-size: .92rem; font-weight: 600; line-height: 1.4;
+      margin-bottom: 8px; color: var(--text);
+    }
+    .card-title a { color: inherit; text-decoration: none; }
+    .card-title a:hover { color: var(--accent); }
+
+    .card-desc {
+      font-size: .78rem; color: var(--muted2); line-height: 1.5;
+      margin-bottom: 12px;
+      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .card-footer {
+      display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+    }
+    .card-chip {
+      display: flex; align-items: center; gap: 5px;
+      font-size: .72rem; color: var(--muted);
+    }
+    .card-chip svg { width: 12px; height: 12px; }
+    .deal-value { color: var(--green); font-weight: 600; }
+
+    /* ── Right Panel ── */
+    .ticker-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 12px; padding: 16px; margin-bottom: 16px;
+    }
+    .ticker-title { font-size: .7rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .1em; margin-bottom: 12px; }
+
+    .ticker-item {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 8px 0; border-bottom: 1px solid var(--border);
+    }
+    .ticker-item:last-child { border-bottom: none; }
+    .ticker-name { font-size: .82rem; font-weight: 500; }
+    .ticker-change { font-size: .78rem; font-weight: 600; }
+    .up { color: var(--green); } .down { color: var(--red); }
+
+    .trend-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 8px 0; border-bottom: 1px solid var(--border);
+      font-size: .8rem;
+    }
+    .trend-item:last-child { border-bottom: none; }
+    .trend-rank {
+      width: 20px; height: 20px; border-radius: 4px;
+      background: var(--surface2); display: flex; align-items: center;
+      justify-content: center; font-size: .68rem; font-weight: 700;
+      color: var(--accent); flex-shrink: 0;
+    }
+    .trend-text { color: var(--muted2); line-height: 1.3; }
+
+    /* ── Loading / Empty ── */
+    .skeleton {
+      background: linear-gradient(90deg, var(--surface) 25%, var(--surface2) 50%, var(--surface) 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.4s infinite;
+      border-radius: 6px;
+    }
+    @keyframes shimmer { to { background-position: -200% 0; } }
+
+    .loading-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 12px; padding: 18px; margin-bottom: 12px;
+    }
+    .sk-line { height: 12px; margin-bottom: 8px; }
+
+    .empty {
+      text-align: center; padding: 48px 24px;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 12px; color: var(--muted);
+    }
+    .empty svg { width: 40px; height: 40px; margin-bottom: 12px; opacity: .4; }
+
+    /* ── Mobile filter drawer ── */
+    .filter-toggle {
+      display: none;
+      background: var(--surface2); border: 1px solid var(--border);
+      color: var(--muted2); padding: 7px 14px; border-radius: 8px;
+      cursor: pointer; font-size: .8rem; align-items: center; gap: 6px;
+    }
+    .filter-toggle svg { width: 14px; height: 14px; }
+
+    /* ── Responsive ── */
+    @media (max-width: 1100px) {
+      .main { grid-template-columns: 220px 1fr; }
+      .right-panel { display: none; }
+    }
+    @media (max-width: 720px) {
+      .main { grid-template-columns: 1fr; padding: 12px; gap: 12px; }
+      .stats-bar { gap: 16px; padding: 10px 16px; }
+      .stat-value { font-size: .95rem; }
+
+      .filter-toggle { display: flex; }
+
+      .left-sidebar {
+        position: fixed; top: 0; left: 0; bottom: 0; width: 280px;
+        background: var(--bg); z-index: 200; overflow-y: auto;
+        padding: 16px; transform: translateX(-100%);
+        transition: transform .25s ease; border-right: 1px solid var(--border);
+      }
+      .left-sidebar.open { transform: translateX(0); }
+
+      .sidebar-overlay {
+        display: none; position: fixed; inset: 0;
+        background: rgba(0,0,0,.5); z-index: 199;
+      }
+      .sidebar-overlay.open { display: block; }
+
+      .sidebar-close {
+        display: flex; align-items: center; justify-content: space-between;
+        margin-bottom: 16px;
+      }
+      .sidebar-close-btn {
+        background: none; border: none; color: var(--muted2);
+        cursor: pointer; padding: 4px;
+      }
+
+      header { padding: 0 16px; }
+      .feed-header { flex-wrap: wrap; gap: 8px; }
+    }
+
+    .timestamp { font-size: .7rem; color: var(--muted); }
+
+    /* ── Deal Lookup ── */
+    .lookup-form { display: flex; gap: 6px; }
+    .lookup-input {
+      flex: 1; background: var(--surface2); border: 1px solid var(--border);
+      color: var(--text); padding: 8px 12px; border-radius: 8px;
+      font-size: .82rem; outline: none; transition: border-color .15s;
+    }
+    .lookup-input:focus { border-color: var(--accent); }
+    .lookup-input::placeholder { color: var(--muted); }
+    .lookup-btn {
+      background: var(--accent); border: none; color: #fff;
+      padding: 8px 12px; border-radius: 8px; cursor: pointer;
+      font-size: .78rem; font-weight: 600; transition: opacity .15s;
+      display: flex; align-items: center; gap: 4px; white-space: nowrap;
+    }
+    .lookup-btn:hover { opacity: .85; }
+    .lookup-btn.spinning svg { animation: spin 1s linear infinite; }
+
+    /* ── Search results banner ── */
+    .results-banner {
+      display: flex; align-items: center; justify-content: space-between;
+      background: rgba(99,102,241,.12); border: 1px solid rgba(99,102,241,.3);
+      border-radius: 8px; padding: 8px 14px; margin-bottom: 14px; font-size: .8rem;
+    }
+    .results-banner-text { color: #a5b4fc; font-weight: 500; }
+    .results-clear {
+      background: none; border: none; color: var(--muted); cursor: pointer;
+      font-size: .75rem; padding: 2px 6px; border-radius: 4px; transition: color .15s;
+    }
+    .results-clear:hover { color: var(--text); }
+
+    /* ── Toast ── */
+    #toastContainer {
+      position: fixed; bottom: 24px; right: 24px; z-index: 999;
+      display: flex; flex-direction: column; gap: 8px; pointer-events: none;
+    }
+    .toast {
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 10px; padding: 10px 16px;
+      font-size: .8rem; color: var(--text); pointer-events: all;
+      box-shadow: 0 4px 24px rgba(0,0,0,.4);
+      display: flex; align-items: center; gap: 10px;
+      animation: toastIn .25s ease;
+    }
+    .toast.green { border-color: rgba(16,185,129,.4); }
+    .toast-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); flex-shrink: 0; }
+    @keyframes toastIn { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+    @keyframes toastOut { to { opacity:0; transform:translateY(10px); } }
+
+    /* ── Expanded card ── */
+    .card.expanded .card-desc {
+      -webkit-line-clamp: unset; overflow: visible;
+    }
+    .card.expanded { border-color: rgba(59,130,246,.5); }
+    .card.expanded::before { opacity: 1; }
+
+    /* ── Keyboard-focused card ── */
+    .card.kbd-focus {
+      border-color: rgba(99,102,241,.6);
+      box-shadow: 0 0 0 2px rgba(99,102,241,.2);
+    }
+
+    /* ── Clickable tag hover ── */
+    .tag.clickable { cursor: pointer; transition: filter .15s; }
+    .tag.clickable:hover { filter: brightness(1.3); }
+  </style>
+</head>
+<body>
+
+<!-- Header -->
+<header>
+  <div class="logo">
+    <div class="logo-icon">M&A</div>
+    DealFlow
+  </div>
+  <div class="header-right">
+    <div class="live-badge"><span class="live-dot"></span>Live</div>
+    <button class="filter-toggle" onclick="toggleSidebar()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      Filters
+    </button>
+    <button class="refresh-btn" id="refreshBtn" onclick="loadNews(true)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
+        <path d="M1 4v6h6M23 20v-6h-6"/>
+        <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4-4.64 4.36A9 9 0 0 1 3.51 15"/>
+      </svg>
+      Refresh
+    </button>
+  </div>
+</header>
+
+<!-- Stats Bar -->
+<div class="stats-bar">
+  <div class="stat">
+    <div class="stat-label">Stories Today</div>
+    <div class="stat-value blue" id="statCount">—</div>
+  </div>
+  <div class="stat">
+    <div class="stat-label">Deal Volume (est.)</div>
+    <div class="stat-value green" id="statVolume">—</div>
+  </div>
+  <div class="stat">
+    <div class="stat-label">Top Sector</div>
+    <div class="stat-value" id="statSector">—</div>
+  </div>
+  <div class="stat">
+    <div class="stat-label">Last Updated</div>
+    <div class="stat-value" id="statTime">—</div>
+  </div>
+  <div class="stat">
+    <div class="stat-label">Sources</div>
+    <div class="stat-value yellow" id="statSources">—</div>
+  </div>
+</div>
+
+<!-- Main Layout -->
+<div class="main">
+
+  <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+
+  <!-- Left Sidebar -->
+  <aside class="left-sidebar" id="leftSidebar">
+    <div class="sidebar-close">
+      <span style="font-size:.7rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.1em">Filters</span>
+      <button class="sidebar-close-btn" onclick="toggleSidebar()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-title">Filter Feed</div>
+      <input class="search-box" id="searchBox" type="text" placeholder="Company, deal, sector…" oninput="applyFilters()" />
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-title">Deal Lookup</div>
+      <div style="font-size:.73rem;color:var(--muted);margin-bottom:8px;">Search any company or deal live</div>
+      <div class="lookup-form">
+        <input class="lookup-input" id="lookupInput" type="text" placeholder="e.g. Cal AI, MyFitnessPal…" onkeydown="if(event.key==='Enter')dealSearch()" />
+        <button class="lookup-btn" id="lookupBtn" onclick="dealSearch()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-title">M&amp;A Focus</div>
+      <div class="filter-pills">
+        <span class="pill active" id="maToggle" onclick="toggleMaOnly(this)">M&amp;A Only</span>
+        <span class="pill" id="allToggle" onclick="toggleMaOnly(this)">All Business</span>
+      </div>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-title">Deal Status</div>
+      <div class="filter-pills" id="statusFilters">
+        <span class="pill active" data-filter="status" data-value="all" onclick="togglePill(this,'status')">All</span>
+        <span class="pill" data-filter="status" data-value="announced" onclick="togglePill(this,'status')">Announced</span>
+        <span class="pill" data-filter="status" data-value="rumor" onclick="togglePill(this,'status')">Rumor</span>
+        <span class="pill" data-filter="status" data-value="closed" onclick="togglePill(this,'status')">Closed</span>
+        <span class="pill" data-filter="status" data-value="blocked" onclick="togglePill(this,'status')">Blocked</span>
+      </div>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-title">Sector</div>
+      <div class="filter-pills" id="sectorFilters">
+        <span class="pill active" data-filter="sector" data-value="all" onclick="togglePill(this,'sector')">All</span>
+        <span class="pill" data-filter="sector" data-value="tech" onclick="togglePill(this,'sector')">Tech</span>
+        <span class="pill" data-filter="sector" data-value="finance" onclick="togglePill(this,'sector')">Finance</span>
+        <span class="pill" data-filter="sector" data-value="healthcare" onclick="togglePill(this,'sector')">Healthcare</span>
+        <span class="pill" data-filter="sector" data-value="energy" onclick="togglePill(this,'sector')">Energy</span>
+        <span class="pill" data-filter="sector" data-value="media" onclick="togglePill(this,'sector')">Media</span>
+        <span class="pill" data-filter="sector" data-value="retail" onclick="togglePill(this,'sector')">Retail</span>
+      </div>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-title">Sources</div>
+      <div id="sourceList" class="filter-pills"></div>
+    </div>
+  </aside>
+
+  <!-- Main Feed -->
+  <main>
+    <div class="feed-header">
+      <div>
+        <div class="feed-title">M&A Deal Feed</div>
+        <div class="feed-count" id="feedCount">Loading…</div>
+      </div>
+      <select class="sort-select" id="sortSelect" onchange="applyFilters()">
+        <option value="date">Newest First</option>
+        <option value="oldest">Oldest First</option>
+      </select>
+    </div>
+    <div id="feed">
+      <!-- Loading skeletons -->
+      <div class="loading-card"><div class="skeleton sk-line" style="width:30%"></div><div class="skeleton sk-line" style="width:90%"></div><div class="skeleton sk-line" style="width:70%"></div></div>
+      <div class="loading-card"><div class="skeleton sk-line" style="width:25%"></div><div class="skeleton sk-line" style="width:80%"></div><div class="skeleton sk-line" style="width:60%"></div></div>
+      <div class="loading-card"><div class="skeleton sk-line" style="width:35%"></div><div class="skeleton sk-line" style="width:85%"></div><div class="skeleton sk-line" style="width:75%"></div></div>
+      <div class="loading-card"><div class="skeleton sk-line" style="width:28%"></div><div class="skeleton sk-line" style="width:75%"></div><div class="skeleton sk-line" style="width:55%"></div></div>
+    </div>
+  </main>
+
+  <!-- Right Panel -->
+  <aside class="right-panel">
+    <div class="ticker-card">
+      <div class="ticker-title">Acquirer Watch</div>
+      <div id="tickerList">
+        <div class="ticker-item"><span class="ticker-name">MSFT</span><span class="ticker-change up">+1.2%</span></div>
+        <div class="ticker-item"><span class="ticker-name">GOOGL</span><span class="ticker-change down">-0.4%</span></div>
+        <div class="ticker-item"><span class="ticker-name">AMZN</span><span class="ticker-change up">+0.8%</span></div>
+        <div class="ticker-item"><span class="ticker-name">META</span><span class="ticker-change up">+2.1%</span></div>
+        <div class="ticker-item"><span class="ticker-name">JPM</span><span class="ticker-change down">-0.3%</span></div>
+      </div>
+    </div>
+
+    <div class="ticker-card">
+      <div class="ticker-title">Trending Topics</div>
+      <div id="trendList"></div>
+    </div>
+  </aside>
+
+</div>
+
+<div id="toastContainer"></div>
+
+<script>
+// ── State ────────────────────────────────────────────────
+let allItems = [];
+let activeFilters = { status: 'all', sector: 'all' };
+let maOnly = true;
+let searchMode = false; // true when showing deal-lookup results
+let searchQuery = '';
+let kbdIndex = -1;        // keyboard navigation index
+let prevCount = 0;        // for new-story detection
+
+// ── Toast ─────────────────────────────────────────────────
+function showToast(msg, type = '') {
+  const container = document.getElementById('toastContainer');
+  const el = document.createElement('div');
+  el.className = `toast ${type}`;
+  el.innerHTML = `<span class="toast-dot" style="${type==='green'?'':'background:var(--accent)'}"></span>${msg}`;
+  container.appendChild(el);
+  setTimeout(() => {
+    el.style.animation = 'toastOut .25s ease forwards';
+    setTimeout(() => el.remove(), 250);
+  }, 3500);
+}
+
+// ── Helpers ──────────────────────────────────────────────
+function timeAgo(date) {
+  const d = new Date(date);
+  if (isNaN(d)) return '';
+  const diff = (Date.now() - d) / 1000;
+  if (diff < 60) return 'just now';
+  if (diff < 3600) return `${Math.floor(diff/60)}m ago`;
+  if (diff < 86400) return `${Math.floor(diff/3600)}h ago`;
+  return `${Math.floor(diff/86400)}d ago`;
+}
+
+function tagClass(status) {
+  return { announced:'tag-deal', rumor:'tag-rumor', closed:'tag-closed', blocked:'tag-blocked' }[status] || 'tag-deal';
+}
+function tagLabel(status) {
+  return { announced:'Announced', rumor:'Rumor', closed:'Closed', blocked:'Blocked' }[status] || status;
+}
+
+// ── Fetch ─────────────────────────────────────────────────
+async function loadNews(force = false) {
+  if (searchMode) return; // don't clobber search results on auto-refresh
+  const btn = document.getElementById('refreshBtn');
+  btn.classList.add('spinning');
+
+  const oldCount = prevCount;
+  try {
+    const url = force ? '/api/news?refresh=1' : '/api/news';
+    const r = await fetch(url, { signal: AbortSignal.timeout(30000) });
+    const data = await r.json();
+    allItems = data.items || [];
+    prevCount = allItems.length;
+  } catch (e) {
+    console.error('Failed to load news:', e);
+    allItems = [];
+  }
+
+  updateStats();
+  updateSourcePills();
+  applyFilters();
+  updateTrends();
+  btn.classList.remove('spinning');
+  document.getElementById('statTime').textContent = new Date().toLocaleTimeString();
+
+  if (force && allItems.length > oldCount) {
+    const newCount = allItems.length - oldCount;
+    showToast(`${newCount} new stor${newCount === 1 ? 'y' : 'ies'} added`, 'green');
+  } else if (force) {
+    showToast('Feed is up to date');
+  }
+}
+
+// ── Deal Lookup ───────────────────────────────────────────
+async function dealSearch() {
+  const input = document.getElementById('lookupInput');
+  const query = input.value.trim();
+  if (!query) return;
+
+  const btn = document.getElementById('lookupBtn');
+  btn.classList.add('spinning');
+  btn.disabled = true;
+
+  try {
+    const r = await fetch(`/api/search?q=${encodeURIComponent(query)}`, { signal: AbortSignal.timeout(20000) });
+    const data = await r.json();
+    const results = data.items || [];
+    searchMode = true;
+    searchQuery = query;
+    renderFeed(results, query);
+    if (results.length === 0) {
+      showToast(`No results found for "${query}"`);
+    } else {
+      showToast(`Found ${results.length} result${results.length===1?'':'s'} for "${query}"`, 'green');
+    }
+  } catch (e) {
+    showToast('Lookup failed — check connection');
+  }
+
+  btn.classList.remove('spinning');
+  btn.disabled = false;
+}
+
+function clearSearch() {
+  searchMode = false;
+  searchQuery = '';
+  document.getElementById('lookupInput').value = '';
+  applyFilters();
+}
+
+// ── Render ────────────────────────────────────────────────
+function renderFeed(items, lookupQuery = null) {
+  const feed = document.getElementById('feed');
+  kbdIndex = -1;
+
+  let banner = '';
+  if (lookupQuery) {
+    banner = `<div class="results-banner">
+      <span class="results-banner-text">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13" style="vertical-align:-2px;margin-right:5px"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        Showing live results for "<strong>${lookupQuery}</strong>" — ${items.length} found
+      </span>
+      <button class="results-clear" onclick="clearSearch()">✕ Clear</button>
+    </div>`;
+  }
+
+  if (!items.length) {
+    feed.innerHTML = banner + `<div class="empty">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M12 8v4m0 4h.01"/></svg>
+      <div>${lookupQuery ? `No results found for "${lookupQuery}"` : 'No stories match your filters'}</div>
+    </div>`;
+    return;
+  }
+
+  feed.innerHTML = banner + items.map((item, idx) => `
+    <div class="card" data-idx="${idx}" data-link="${item.link}" onclick="toggleCard(event, this)">
+      <div class="card-top">
+        <span class="card-source">${item.source} · <span class="timestamp">${timeAgo(item.pubDate)}</span></span>
+        <div class="card-meta">
+          ${item.maRelated ? `<span class="tag clickable ${tagClass(item.status)}" onclick="filterByTag(event,'status','${item.status}')">${tagLabel(item.status)}</span>` : ''}
+          ${item.sector !== 'general' ? `<span class="tag clickable" style="background:rgba(99,102,241,.1);color:#818cf8" onclick="filterByTag(event,'sector','${item.sector}')">${item.sector}</span>` : ''}
+        </div>
+      </div>
+      <div class="card-title"><a href="${item.link}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${item.title}</a></div>
+      ${item.description ? `<div class="card-desc">${item.description}</div>` : ''}
+      <div class="card-footer">
+        ${item.dealValue ? `<span class="card-chip deal-value">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+          ${item.dealValue}
+        </span>` : ''}
+        <span class="card-chip">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+          ${new Date(item.pubDate).toLocaleDateString('en-US',{month:'short',day:'numeric'})}
+        </span>
+        <span class="card-chip">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+          ${item.sourceFull}
+        </span>
+      </div>
+    </div>
+  `).join('');
+
+  document.getElementById('feedCount').textContent = `${items.length} stories`;
+}
+
+// ── Card interaction ──────────────────────────────────────
+function toggleCard(event, card) {
+  // Don't expand when clicking links/tags
+  if (event.target.tagName === 'A' || event.target.closest('a') || event.target.classList.contains('tag')) return;
+  card.classList.toggle('expanded');
+}
+
+// ── Click tag to filter ───────────────────────────────────
+function filterByTag(event, filterType, value) {
+  event.stopPropagation();
+  if (searchMode) return; // don't filter in search results mode
+  const pill = document.querySelector(`[data-filter="${filterType}"][data-value="${value}"]`);
+  if (pill) {
+    togglePill(pill, filterType);
+    pill.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    showToast(`Filtering by ${filterType}: ${value}`);
+  }
+}
+
+// ── Filters ───────────────────────────────────────────────
+function applyFilters() {
+  if (searchMode) return;
+  const query = document.getElementById('searchBox').value.toLowerCase();
+  const sort = document.getElementById('sortSelect').value;
+
+  let items = [...allItems];
+  if (maOnly) items = items.filter(i => i.maRelated);
+  if (activeFilters.status !== 'all') items = items.filter(i => i.status === activeFilters.status);
+  if (activeFilters.sector !== 'all') items = items.filter(i => i.sector === activeFilters.sector);
+  if (query) {
+    items = items.filter(i =>
+      i.title.toLowerCase().includes(query) ||
+      i.description.toLowerCase().includes(query) ||
+      i.source.toLowerCase().includes(query)
+    );
+  }
+  if (sort === 'oldest') items.reverse();
+  renderFeed(items);
+}
+
+function toggleMaOnly(el) {
+  maOnly = (el.id === 'maToggle');
+  document.getElementById('maToggle').classList.toggle('active', maOnly);
+  document.getElementById('allToggle').classList.toggle('active', !maOnly);
+  applyFilters();
+}
+
+function togglePill(el, filterType) {
+  const group = document.querySelectorAll(`[data-filter="${filterType}"]`);
+  group.forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+  activeFilters[filterType] = el.dataset.value;
+  applyFilters();
+}
+
+// ── Stats ─────────────────────────────────────────────────
+function updateStats() {
+  const maItems = allItems.filter(i => i.maRelated);
+  const today = new Date().toDateString();
+  const todayMa = maItems.filter(i => new Date(i.pubDate).toDateString() === today);
+  document.getElementById('statCount').textContent = todayMa.length || maItems.length;
+  const withValues = maItems.filter(i => i.dealValue);
+  document.getElementById('statVolume').textContent = withValues.length > 0
+    ? `${withValues.length} deals w/ values` : 'N/A';
+  const sectorCounts = {};
+  allItems.forEach(i => { sectorCounts[i.sector] = (sectorCounts[i.sector]||0)+1; });
+  const topSector = Object.entries(sectorCounts).sort((a,b)=>b[1]-a[1])[0];
+  document.getElementById('statSector').textContent = topSector
+    ? topSector[0].charAt(0).toUpperCase() + topSector[0].slice(1) : '—';
+  const sources = new Set(allItems.map(i => i.source));
+  document.getElementById('statSources').textContent = sources.size;
+}
+
+function updateSourcePills() {
+  const sources = [...new Set(allItems.map(i => i.source))];
+  document.getElementById('sourceList').innerHTML = sources.map(s =>
+    `<span class="pill active" style="font-size:.68rem">${s}</span>`
+  ).join('');
+}
+
+function updateTrends() {
+  const wordMap = {};
+  allItems.slice(0, 50).forEach(item => {
+    const words = item.title.split(/\s+/).filter(w => w.length > 4 && !/^(with|that|this|from|into|over|when|also|been|have|will|they|their|more|some|than|other)$/i.test(w));
+    words.forEach(w => {
+      const key = w.replace(/[^a-zA-Z]/g,'').toLowerCase();
+      if (key.length > 4) wordMap[key] = (wordMap[key]||0)+1;
+    });
+  });
+  const top = Object.entries(wordMap).sort((a,b)=>b[1]-a[1]).slice(0,8);
+  document.getElementById('trendList').innerHTML = top.map(([word,count],i) =>
+    `<div class="trend-item">
+      <div class="trend-rank">${i+1}</div>
+      <div class="trend-text">${word.charAt(0).toUpperCase()+word.slice(1)} <span style="color:var(--muted);font-size:.7rem">(${count})</span></div>
+    </div>`
+  ).join('');
+}
+
+// ── Keyboard shortcuts ────────────────────────────────────
+document.addEventListener('keydown', e => {
+  const tag = document.activeElement.tagName;
+  const inInput = tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT';
+
+  // / → focus filter search
+  if (e.key === '/' && !inInput) {
+    e.preventDefault();
+    document.getElementById('searchBox').focus();
+    return;
+  }
+  // R → refresh
+  if ((e.key === 'r' || e.key === 'R') && !inInput) {
+    loadNews(true);
+    return;
+  }
+  // Escape → clear search box or search mode
+  if (e.key === 'Escape') {
+    if (searchMode) { clearSearch(); return; }
+    document.getElementById('searchBox').value = '';
+    applyFilters();
+    document.getElementById('searchBox').blur();
+    return;
+  }
+
+  if (inInput) return;
+
+  const cards = [...document.querySelectorAll('#feed .card')];
+  if (!cards.length) return;
+
+  // j / ArrowDown → next card
+  if (e.key === 'j' || e.key === 'ArrowDown') {
+    e.preventDefault();
+    cards.forEach(c => c.classList.remove('kbd-focus'));
+    kbdIndex = Math.min(kbdIndex + 1, cards.length - 1);
+    cards[kbdIndex].classList.add('kbd-focus');
+    cards[kbdIndex].scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    return;
+  }
+  // k / ArrowUp → prev card
+  if (e.key === 'k' || e.key === 'ArrowUp') {
+    e.preventDefault();
+    cards.forEach(c => c.classList.remove('kbd-focus'));
+    kbdIndex = Math.max(kbdIndex - 1, 0);
+    cards[kbdIndex].classList.add('kbd-focus');
+    cards[kbdIndex].scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    return;
+  }
+  // Enter → open focused card
+  if (e.key === 'Enter' && kbdIndex >= 0 && cards[kbdIndex]) {
+    const link = cards[kbdIndex].dataset.link;
+    if (link) window.open(link, '_blank', 'noopener');
+    return;
+  }
+  // Space → expand/collapse focused card
+  if (e.key === ' ' && kbdIndex >= 0 && cards[kbdIndex]) {
+    e.preventDefault();
+    cards[kbdIndex].classList.toggle('expanded');
+  }
+});
+
+// ── Mobile sidebar ────────────────────────────────────────
+function toggleSidebar() {
+  document.getElementById('leftSidebar').classList.toggle('open');
+  document.getElementById('sidebarOverlay').classList.toggle('open');
+}
+
+// ── Boot ──────────────────────────────────────────────────
+loadNews();
+setInterval(loadNews, 5 * 60 * 1000);
+</script>
+
+</body>
+</html>

@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: dealflow-ma-tracker
+    runtime: python
+    buildCommand: echo "no build needed"
+    startCommand: python3 server.py
+    envVars:
+      - key: PORT
+        value: 10000
+    plan: free

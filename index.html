@@ -1,872 +1,769 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>DealFlow — M&A Intelligence</title>
-  <style>
-    :root {
-      --bg: #0a0d14;
-      --surface: #111520;
-      --surface2: #181d2e;
-      --border: #1e2540;
-      --accent: #3b82f6;
-      --accent2: #6366f1;
-      --green: #10b981;
-      --yellow: #f59e0b;
-      --red: #ef4444;
-      --text: #e2e8f0;
-      --muted: #64748b;
-      --muted2: #94a3b8;
-    }
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>DealFlow — M&A Intelligence</title>
+<style>
+:root {
+  --bg:       #070c16;
+  --s1:       #0d1525;
+  --s2:       #111e33;
+  --s3:       #1a2840;
+  --border:   #1e2f48;
+  --gold:     #f0a500;
+  --gold2:    #ffc53d;
+  --green:    #00c896;
+  --red:      #ff4560;
+  --blue:     #4b9eff;
+  --text:     #d4dce8;
+  --muted:    #4d6680;
+  --muted2:   #7a95b0;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
 
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+/* HEADER */
+header{
+  position:sticky;top:0;z-index:200;
+  background:rgba(7,12,22,.94);backdrop-filter:blur(16px);
+  border-bottom:1px solid var(--border);
+  padding:0 20px;height:58px;
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+}
+.logo{display:flex;align-items:center;gap:9px;text-decoration:none;flex-shrink:0}
+.logo-mark{
+  width:34px;height:34px;border-radius:8px;
+  background:linear-gradient(135deg,#f0a500,#ff6b35);
+  display:flex;align-items:center;justify-content:center;
+  font-size:.7rem;font-weight:900;color:#fff;
+}
+.logo-text{font-size:1.05rem;font-weight:700;letter-spacing:-.3px}
+.logo-sub{font-size:.62rem;color:var(--muted2);font-weight:400;margin-left:3px;vertical-align:middle}
 
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      min-height: 100vh;
-    }
+.hstats{display:flex;gap:22px;flex:1;justify-content:center}
+.hstat{text-align:center;display:none}
+@media(min-width:860px){.hstat{display:block}}
+.hstat-val{font-size:.88rem;font-weight:700;line-height:1}
+.hstat-lbl{font-size:.58rem;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-top:2px}
 
-    /* ── Header ── */
-    header {
-      position: sticky; top: 0; z-index: 100;
-      background: rgba(10,13,20,.85);
-      backdrop-filter: blur(12px);
-      border-bottom: 1px solid var(--border);
-      padding: 0 24px;
-      display: flex; align-items: center; justify-content: space-between;
-      height: 60px;
-    }
+.hactions{display:flex;align-items:center;gap:7px;flex-shrink:0}
+.live-pill{
+  display:flex;align-items:center;gap:5px;
+  background:rgba(0,200,150,.08);border:1px solid rgba(0,200,150,.22);
+  color:var(--green);font-size:.68rem;font-weight:600;
+  padding:3px 9px;border-radius:20px;
+}
+.live-dot{width:6px;height:6px;background:var(--green);border-radius:50%;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
 
-    .logo {
-      display: flex; align-items: center; gap: 10px;
-      font-size: 1.2rem; font-weight: 700; letter-spacing: -.5px;
-    }
-    .logo-icon {
-      width: 32px; height: 32px;
-      background: linear-gradient(135deg, var(--accent), var(--accent2));
-      border-radius: 8px;
-      display: flex; align-items: center; justify-content: center;
-      font-size: .8rem; font-weight: 900;
-    }
+.ibtn{
+  background:var(--s2);border:1px solid var(--border);color:var(--muted2);
+  width:34px;height:34px;border-radius:8px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;transition:all .15s;
+  flex-shrink:0;position:relative;
+}
+.ibtn:hover{border-color:var(--gold);color:var(--gold)}
+.ibtn.on{background:rgba(240,165,0,.1);border-color:var(--gold);color:var(--gold)}
+.ibtn.spinning svg{animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.ibtn .badge{
+  position:absolute;top:-5px;right:-5px;
+  background:var(--red);color:#fff;font-size:.52rem;font-weight:700;
+  min-width:15px;height:15px;border-radius:8px;padding:0 3px;
+  display:none;align-items:center;justify-content:center;
+}
 
-    .header-right { display: flex; align-items: center; gap: 12px; }
+.claude-pill{
+  display:none;align-items:center;gap:4px;
+  background:rgba(167,139,250,.08);border:1px solid rgba(167,139,250,.22);
+  color:#c4b5fd;font-size:.62rem;font-weight:600;
+  padding:3px 8px;border-radius:20px;
+}
+.claude-pill.on{display:flex}
 
-    .live-badge {
-      display: flex; align-items: center; gap: 6px;
-      background: rgba(16,185,129,.1); border: 1px solid rgba(16,185,129,.3);
-      color: var(--green); font-size: .75rem; font-weight: 600;
-      padding: 4px 10px; border-radius: 20px;
-    }
-    .live-dot {
-      width: 6px; height: 6px; background: var(--green);
-      border-radius: 50%; animation: pulse 2s infinite;
-    }
-    @keyframes pulse {
-      0%,100% { opacity:1; } 50% { opacity:.4; }
-    }
+/* PAGE */
+.page{max-width:1360px;margin:0 auto;padding:20px;display:flex;gap:18px}
+.feed-col{flex:1;min-width:0}
+.rpanel{width:272px;flex-shrink:0}
+@media(max-width:1080px){.rpanel{display:none}}
 
-    .refresh-btn {
-      background: var(--surface2); border: 1px solid var(--border);
-      color: var(--muted2); padding: 6px 14px; border-radius: 8px;
-      cursor: pointer; font-size: .8rem; transition: all .15s;
-      display: flex; align-items: center; gap: 6px;
-    }
-    .refresh-btn:hover { border-color: var(--accent); color: var(--accent); }
-    .refresh-btn.spinning svg { animation: spin 1s linear infinite; }
-    @keyframes spin { to { transform: rotate(360deg); } }
+/* SEARCH */
+.search-row{display:flex;gap:8px;margin-bottom:14px}
+.sinput-wrap{position:relative;flex:1}
+.sinput-wrap svg{position:absolute;left:10px;top:50%;transform:translateY(-50%);width:14px;height:14px;color:var(--muted);pointer-events:none}
+.sinput{
+  width:100%;background:var(--s1);border:1px solid var(--border);color:var(--text);
+  padding:8px 12px 8px 32px;border-radius:8px;font-size:.81rem;outline:none;transition:border-color .15s;
+}
+.sinput:focus{border-color:var(--gold)}
+.sinput::placeholder{color:var(--muted)}
 
-    /* ── Stats bar ── */
-    .stats-bar {
-      background: var(--surface);
-      border-bottom: 1px solid var(--border);
-      padding: 14px 24px;
-      display: flex; gap: 32px; overflow-x: auto;
-    }
-    .stat { white-space: nowrap; }
-    .stat-label { font-size: .7rem; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; margin-bottom: 2px; }
-    .stat-value { font-size: 1.1rem; font-weight: 700; }
-    .stat-value.green { color: var(--green); }
-    .stat-value.blue { color: var(--accent); }
-    .stat-value.yellow { color: var(--yellow); }
+/* FEED HEADER */
+.feed-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;gap:10px}
+.feed-top h2{font-size:.95rem;font-weight:700}
+.feed-sub{font-size:.7rem;color:var(--muted);margin-top:2px}
+.sel{
+  background:var(--s2);border:1px solid var(--border);color:var(--muted2);
+  padding:5px 10px;border-radius:7px;font-size:.73rem;cursor:pointer;outline:none;
+}
+.sel:focus{border-color:var(--gold)}
 
-    /* ── Layout ── */
-    .main {
-      max-width: 1400px; margin: 0 auto;
-      padding: 24px;
-      display: grid;
-      grid-template-columns: 260px 1fr 280px;
-      gap: 20px;
-    }
+/* CARDS */
+.card{
+  background:var(--s1);border:1px solid var(--border);border-radius:11px;
+  margin-bottom:9px;cursor:pointer;transition:all .18s;
+  position:relative;overflow:hidden;
+}
+.card::before{
+  content:'';position:absolute;left:0;top:0;bottom:0;width:3px;
+  background:var(--sc, var(--muted));transition:opacity .2s;opacity:.65;
+}
+.card:hover{border-color:rgba(240,165,0,.28);transform:translateY(-1px);box-shadow:0 5px 24px rgba(0,0,0,.32)}
+.card:hover::before{opacity:1}
+.card.expanded .cdesc{-webkit-line-clamp:unset;overflow:visible}
+.card.expanded{border-color:rgba(240,165,0,.35)}
+.card.kfocus{box-shadow:0 0 0 2px rgba(240,165,0,.28)}
 
-    /* ── Sidebar ── */
-    .sidebar-section {
-      background: var(--surface); border: 1px solid var(--border);
-      border-radius: 12px; padding: 16px; margin-bottom: 16px;
-    }
-    .sidebar-title {
-      font-size: .7rem; font-weight: 600; color: var(--muted);
-      text-transform: uppercase; letter-spacing: .1em; margin-bottom: 12px;
-    }
+.ci{padding:13px 15px}
 
-    .filter-group { margin-bottom: 8px; }
-    .filter-label {
-      font-size: .78rem; color: var(--muted2); margin-bottom: 6px; display: block;
-    }
+.cheader{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:7px}
+.cmeta{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+.csrc{font-size:.63rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.07em}
+.ctime{font-size:.63rem;color:var(--muted)}
+.new-badge{
+  background:rgba(255,69,96,.13);border:1px solid rgba(255,69,96,.28);
+  color:var(--red);font-size:.58rem;font-weight:700;
+  padding:1px 5px;border-radius:3px;letter-spacing:.04em;
+  animation:np 2s infinite;
+}
+@keyframes np{0%,100%{opacity:1}50%{opacity:.55}}
 
-    .filter-pills { display: flex; flex-wrap: wrap; gap: 6px; }
-    .pill {
-      font-size: .72rem; padding: 4px 10px; border-radius: 20px;
-      border: 1px solid var(--border); color: var(--muted2);
-      cursor: pointer; transition: all .15s; background: var(--surface2);
-    }
-    .pill:hover { border-color: var(--accent); color: var(--accent); }
-    .pill.active { background: rgba(59,130,246,.15); border-color: var(--accent); color: var(--accent); }
+.cbtns{display:flex;gap:3px;flex-shrink:0}
+.cbtn{
+  background:none;border:none;color:var(--muted);cursor:pointer;
+  width:24px;height:24px;border-radius:5px;display:flex;align-items:center;justify-content:center;
+  transition:all .15s;
+}
+.cbtn:hover{background:var(--s3);color:var(--text)}
+.cbtn.saved{color:var(--gold)}
 
-    .search-box {
-      width: 100%;
-      background: var(--surface2); border: 1px solid var(--border);
-      color: var(--text); padding: 8px 12px; border-radius: 8px;
-      font-size: .82rem; outline: none; transition: border-color .15s;
-    }
-    .search-box:focus { border-color: var(--accent); }
-    .search-box::placeholder { color: var(--muted); }
+.ctags{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:7px}
+.tag{
+  font-size:.6rem;font-weight:600;padding:2px 7px;border-radius:4px;
+  text-transform:uppercase;letter-spacing:.04em;cursor:pointer;transition:filter .15s;border-width:1px;border-style:solid;
+}
+.tag:hover{filter:brightness(1.3)}
+.t-ann{background:rgba(75,158,255,.1);color:#4b9eff;border-color:rgba(75,158,255,.2)}
+.t-rum{background:rgba(240,165,0,.08);color:var(--gold);border-color:rgba(240,165,0,.18)}
+.t-cls{background:rgba(0,200,150,.08);color:var(--green);border-color:rgba(0,200,150,.18)}
+.t-blk{background:rgba(255,69,96,.08);color:var(--red);border-color:rgba(255,69,96,.18)}
+.dval{
+  display:inline-flex;align-items:center;gap:4px;
+  background:rgba(0,200,150,.08);border:1px solid rgba(0,200,150,.18);
+  color:var(--green);font-size:.7rem;font-weight:700;
+  padding:2px 8px;border-radius:5px;
+}
+.dval svg{width:10px;height:10px}
 
-    /* ── Feed ── */
-    .feed-header {
-      display: flex; align-items: center; justify-content: space-between;
-      margin-bottom: 16px;
-    }
-    .feed-title { font-size: 1rem; font-weight: 600; }
-    .feed-count { font-size: .78rem; color: var(--muted); }
+.ctitle{font-size:.88rem;font-weight:600;line-height:1.45;margin-bottom:6px}
+.ctitle a{color:var(--text);text-decoration:none;transition:color .15s}
+.ctitle a:hover{color:var(--gold)}
 
-    .sort-select {
-      background: var(--surface2); border: 1px solid var(--border);
-      color: var(--muted2); padding: 5px 10px; border-radius: 7px;
-      font-size: .75rem; cursor: pointer; outline: none;
-    }
+.parties{
+  display:flex;align-items:center;gap:7px;margin-bottom:8px;
+  padding:6px 10px;background:var(--s2);border-radius:6px;border:1px solid var(--border);
+}
+.party{font-size:.75rem;font-weight:600;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.plbl{font-size:.56rem;color:var(--muted);display:block;font-weight:400;margin-bottom:1px}
+.parrow{color:var(--gold);font-size:.85rem;flex-shrink:0}
 
-    /* ── Cards ── */
-    .card {
-      background: var(--surface); border: 1px solid var(--border);
-      border-radius: 12px; padding: 18px; margin-bottom: 12px;
-      cursor: pointer; transition: all .2s; position: relative; overflow: hidden;
-    }
-    .card::before {
-      content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px;
-      background: var(--accent); opacity: 0; transition: opacity .2s;
-    }
-    .card:hover { border-color: rgba(59,130,246,.4); transform: translateY(-1px); box-shadow: 0 4px 20px rgba(0,0,0,.3); }
-    .card:hover::before { opacity: 1; }
+.cdesc{
+  font-size:.75rem;color:var(--muted2);line-height:1.5;margin-bottom:9px;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
+}
 
-    .card-top {
-      display: flex; align-items: flex-start; justify-content: space-between; gap: 12px;
-      margin-bottom: 10px;
-    }
-    .card-source {
-      font-size: .68rem; font-weight: 600; color: var(--muted);
-      text-transform: uppercase; letter-spacing: .08em;
-    }
-    .card-meta { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.cfoot{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.cchip{display:flex;align-items:center;gap:4px;font-size:.65rem;color:var(--muted)}
+.cchip svg{width:11px;height:11px;flex-shrink:0}
 
-    .tag {
-      font-size: .67rem; font-weight: 600; padding: 2px 8px; border-radius: 4px;
-      text-transform: uppercase; letter-spacing: .05em;
-    }
-    .tag-deal { background: rgba(59,130,246,.15); color: var(--accent); }
-    .tag-rumor { background: rgba(245,158,11,.12); color: var(--yellow); }
-    .tag-closed { background: rgba(16,185,129,.12); color: var(--green); }
-    .tag-blocked { background: rgba(239,68,68,.12); color: var(--red); }
+/* DRAWER */
+.overlay{position:fixed;inset:0;z-index:300;background:rgba(0,0,0,.62);opacity:0;pointer-events:none;transition:opacity .25s}
+.overlay.open{opacity:1;pointer-events:all}
+.drawer{
+  position:fixed;left:0;top:0;bottom:0;z-index:400;width:290px;max-width:88vw;
+  background:var(--s1);border-right:1px solid var(--border);
+  transform:translateX(-100%);transition:transform .28s cubic-bezier(.4,0,.2,1);
+  overflow-y:auto;display:flex;flex-direction:column;
+}
+.drawer.open{transform:translateX(0)}
+.dhead{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:15px 17px;border-bottom:1px solid var(--border);
+  font-size:.72rem;font-weight:700;color:var(--muted2);text-transform:uppercase;letter-spacing:.08em;flex-shrink:0;
+}
+.dclose{background:none;border:none;color:var(--muted);cursor:pointer;width:26px;height:26px;border-radius:5px;display:flex;align-items:center;justify-content:center;transition:all .15s}
+.dclose:hover{background:var(--s3);color:var(--text)}
+.dbody{padding:15px}
+.dsec{margin-bottom:16px}
+.dsec-t{font-size:.62rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.09em;margin-bottom:7px}
+.pills{display:flex;flex-wrap:wrap;gap:5px}
+.pill{
+  font-size:.68rem;padding:4px 10px;border-radius:20px;
+  border:1px solid var(--border);color:var(--muted2);
+  cursor:pointer;transition:all .15s;background:var(--s2);
+}
+.pill:hover{border-color:var(--gold);color:var(--gold)}
+.pill.active{background:rgba(240,165,0,.1);border-color:var(--gold);color:var(--gold)}
 
-    .card-title {
-      font-size: .92rem; font-weight: 600; line-height: 1.4;
-      margin-bottom: 8px; color: var(--text);
-    }
-    .card-title a { color: inherit; text-decoration: none; }
-    .card-title a:hover { color: var(--accent); }
+.lrow{display:flex;gap:6px}
+.lin{
+  flex:1;background:var(--s2);border:1px solid var(--border);color:var(--text);
+  padding:7px 10px;border-radius:7px;font-size:.78rem;outline:none;transition:border-color .15s;
+}
+.lin:focus{border-color:var(--gold)}
+.lin::placeholder{color:var(--muted)}
+.lgo{
+  background:var(--gold);border:none;color:#000;
+  padding:7px 12px;border-radius:7px;cursor:pointer;font-size:.73rem;font-weight:700;
+  transition:opacity .15s;white-space:nowrap;display:flex;align-items:center;gap:4px;
+}
+.lgo:hover{opacity:.85}
+.lgo.spinning svg{animation:spin 1s linear infinite}
 
-    .card-desc {
-      font-size: .78rem; color: var(--muted2); line-height: 1.5;
-      margin-bottom: 12px;
-      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
-      overflow: hidden;
-    }
+/* RESULTS BANNER */
+.rbanner{
+  display:flex;align-items:center;justify-content:space-between;
+  background:rgba(75,158,255,.07);border:1px solid rgba(75,158,255,.18);
+  border-radius:8px;padding:8px 13px;margin-bottom:12px;font-size:.76rem;
+}
+.rbtxt{color:#7fb3ff;font-weight:500}
+.rbclr{background:none;border:none;color:var(--muted);cursor:pointer;font-size:.7rem;padding:2px 6px;border-radius:4px;transition:color .15s}
+.rbclr:hover{color:var(--text)}
 
-    .card-footer {
-      display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
-    }
-    .card-chip {
-      display: flex; align-items: center; gap: 5px;
-      font-size: .72rem; color: var(--muted);
-    }
-    .card-chip svg { width: 12px; height: 12px; }
-    .deal-value { color: var(--green); font-weight: 600; }
+/* RIGHT PANEL */
+.rcard{background:var(--s1);border:1px solid var(--border);border-radius:11px;padding:15px;margin-bottom:14px}
+.rtitle{font-size:.62rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:11px}
 
-    /* ── Right Panel ── */
-    .ticker-card {
-      background: var(--surface); border: 1px solid var(--border);
-      border-radius: 12px; padding: 16px; margin-bottom: 16px;
-    }
-    .ticker-title { font-size: .7rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .1em; margin-bottom: 12px; }
+.srow{display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:.72rem}
+.sname{width:70px;color:var(--muted2);flex-shrink:0}
+.sbarw{flex:1;background:var(--s2);border-radius:3px;height:4px;overflow:hidden}
+.sbar{height:100%;border-radius:3px;transition:width .4s}
+.scnt{width:26px;text-align:right;color:var(--muted);flex-shrink:0}
 
-    .ticker-item {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 8px 0; border-bottom: 1px solid var(--border);
-    }
-    .ticker-item:last-child { border-bottom: none; }
-    .ticker-name { font-size: .82rem; font-weight: 500; }
-    .ticker-change { font-size: .78rem; font-weight: 600; }
-    .up { color: var(--green); } .down { color: var(--red); }
+.tdeal{padding:7px 0;border-bottom:1px solid var(--border)}
+.tdeal:last-child{border-bottom:none}
+.tdeal-t{font-size:.73rem;color:var(--text);line-height:1.3}
+.tdeal-v{font-size:.68rem;color:var(--green);font-weight:600;margin-top:2px}
+.tdeal-m{font-size:.63rem;color:var(--muted);margin-top:1px}
 
-    .trend-item {
-      display: flex; align-items: center; gap: 10px;
-      padding: 8px 0; border-bottom: 1px solid var(--border);
-      font-size: .8rem;
-    }
-    .trend-item:last-child { border-bottom: none; }
-    .trend-rank {
-      width: 20px; height: 20px; border-radius: 4px;
-      background: var(--surface2); display: flex; align-items: center;
-      justify-content: center; font-size: .68rem; font-weight: 700;
-      color: var(--accent); flex-shrink: 0;
-    }
-    .trend-text { color: var(--muted2); line-height: 1.3; }
+.tritem{display:flex;align-items:center;gap:7px;padding:5px 0;border-bottom:1px solid var(--border);font-size:.72rem}
+.tritem:last-child{border-bottom:none}
+.trrank{width:17px;height:17px;border-radius:3px;background:var(--s2);display:flex;align-items:center;justify-content:center;font-size:.6rem;font-weight:700;color:var(--gold);flex-shrink:0}
+.trtxt{color:var(--muted2);line-height:1.3}
 
-    /* ── Loading / Empty ── */
-    .skeleton {
-      background: linear-gradient(90deg, var(--surface) 25%, var(--surface2) 50%, var(--surface) 75%);
-      background-size: 200% 100%;
-      animation: shimmer 1.4s infinite;
-      border-radius: 6px;
-    }
-    @keyframes shimmer { to { background-position: -200% 0; } }
+/* EMPTY / SKELETON */
+.empty{text-align:center;padding:56px 20px;background:var(--s1);border:1px solid var(--border);border-radius:11px;color:var(--muted)}
+.empty svg{width:40px;height:40px;margin-bottom:12px;opacity:.28}
+.lcard{background:var(--s1);border:1px solid var(--border);border-radius:11px;padding:16px;margin-bottom:9px}
+.sk{background:linear-gradient(90deg,var(--s1) 25%,var(--s2) 50%,var(--s1) 75%);background-size:200% 100%;animation:shim 1.4s infinite;border-radius:5px;height:10px;margin-bottom:7px}
+@keyframes shim{to{background-position:-200% 0}}
 
-    .loading-card {
-      background: var(--surface); border: 1px solid var(--border);
-      border-radius: 12px; padding: 18px; margin-bottom: 12px;
-    }
-    .sk-line { height: 12px; margin-bottom: 8px; }
+/* TOAST */
+#toasts{position:fixed;bottom:20px;right:20px;z-index:999;display:flex;flex-direction:column;gap:6px;pointer-events:none}
+.toast{
+  background:var(--s2);border:1px solid var(--border);border-radius:9px;
+  padding:9px 14px;font-size:.76rem;color:var(--text);pointer-events:all;
+  box-shadow:0 4px 20px rgba(0,0,0,.45);display:flex;align-items:center;gap:7px;
+  animation:tin .2s ease;
+}
+.toast.green{border-color:rgba(0,200,150,.28)}
+.toast.red{border-color:rgba(255,69,96,.28)}
+.tdot{width:7px;height:7px;border-radius:50%;background:var(--green);flex-shrink:0}
+@keyframes tin{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:none}}
+@keyframes tout{to{opacity:0;transform:translateY(7px)}}
 
-    .empty {
-      text-align: center; padding: 48px 24px;
-      background: var(--surface); border: 1px solid var(--border);
-      border-radius: 12px; color: var(--muted);
-    }
-    .empty svg { width: 40px; height: 40px; margin-bottom: 12px; opacity: .4; }
+/* MOBILE FAB */
+.fab{
+  display:none;position:fixed;bottom:22px;left:22px;z-index:150;
+  width:46px;height:46px;border-radius:13px;
+  background:var(--gold);border:none;color:#000;cursor:pointer;
+  box-shadow:0 4px 18px rgba(240,165,0,.32);
+  align-items:center;justify-content:center;
+}
+@media(max-width:680px){.fab{display:flex}.page{padding:12px}.hstats{display:none}}
 
-    /* ── Mobile filter drawer ── */
-    .filter-toggle {
-      display: none;
-      background: var(--surface2); border: 1px solid var(--border);
-      color: var(--muted2); padding: 7px 14px; border-radius: 8px;
-      cursor: pointer; font-size: .8rem; align-items: center; gap: 6px;
-    }
-    .filter-toggle svg { width: 14px; height: 14px; }
-
-    /* ── Responsive ── */
-    @media (max-width: 1100px) {
-      .main { grid-template-columns: 220px 1fr; }
-      .right-panel { display: none; }
-    }
-    @media (max-width: 720px) {
-      .main { grid-template-columns: 1fr; padding: 12px; gap: 12px; }
-      .stats-bar { gap: 16px; padding: 10px 16px; }
-      .stat-value { font-size: .95rem; }
-
-      .filter-toggle { display: flex; }
-
-      .left-sidebar {
-        position: fixed; top: 0; left: 0; bottom: 0; width: 280px;
-        background: var(--bg); z-index: 200; overflow-y: auto;
-        padding: 16px; transform: translateX(-100%);
-        transition: transform .25s ease; border-right: 1px solid var(--border);
-      }
-      .left-sidebar.open { transform: translateX(0); }
-
-      .sidebar-overlay {
-        display: none; position: fixed; inset: 0;
-        background: rgba(0,0,0,.5); z-index: 199;
-      }
-      .sidebar-overlay.open { display: block; }
-
-      .sidebar-close {
-        display: flex; align-items: center; justify-content: space-between;
-        margin-bottom: 16px;
-      }
-      .sidebar-close-btn {
-        background: none; border: none; color: var(--muted2);
-        cursor: pointer; padding: 4px;
-      }
-
-      header { padding: 0 16px; }
-      .feed-header { flex-wrap: wrap; gap: 8px; }
-    }
-
-    .timestamp { font-size: .7rem; color: var(--muted); }
-
-    /* ── Deal Lookup ── */
-    .lookup-form { display: flex; gap: 6px; }
-    .lookup-input {
-      flex: 1; background: var(--surface2); border: 1px solid var(--border);
-      color: var(--text); padding: 8px 12px; border-radius: 8px;
-      font-size: .82rem; outline: none; transition: border-color .15s;
-    }
-    .lookup-input:focus { border-color: var(--accent); }
-    .lookup-input::placeholder { color: var(--muted); }
-    .lookup-btn {
-      background: var(--accent); border: none; color: #fff;
-      padding: 8px 12px; border-radius: 8px; cursor: pointer;
-      font-size: .78rem; font-weight: 600; transition: opacity .15s;
-      display: flex; align-items: center; gap: 4px; white-space: nowrap;
-    }
-    .lookup-btn:hover { opacity: .85; }
-    .lookup-btn.spinning svg { animation: spin 1s linear infinite; }
-
-    /* ── Search results banner ── */
-    .results-banner {
-      display: flex; align-items: center; justify-content: space-between;
-      background: rgba(99,102,241,.12); border: 1px solid rgba(99,102,241,.3);
-      border-radius: 8px; padding: 8px 14px; margin-bottom: 14px; font-size: .8rem;
-    }
-    .results-banner-text { color: #a5b4fc; font-weight: 500; }
-    .results-clear {
-      background: none; border: none; color: var(--muted); cursor: pointer;
-      font-size: .75rem; padding: 2px 6px; border-radius: 4px; transition: color .15s;
-    }
-    .results-clear:hover { color: var(--text); }
-
-    /* ── Toast ── */
-    #toastContainer {
-      position: fixed; bottom: 24px; right: 24px; z-index: 999;
-      display: flex; flex-direction: column; gap: 8px; pointer-events: none;
-    }
-    .toast {
-      background: var(--surface2); border: 1px solid var(--border);
-      border-radius: 10px; padding: 10px 16px;
-      font-size: .8rem; color: var(--text); pointer-events: all;
-      box-shadow: 0 4px 24px rgba(0,0,0,.4);
-      display: flex; align-items: center; gap: 10px;
-      animation: toastIn .25s ease;
-    }
-    .toast.green { border-color: rgba(16,185,129,.4); }
-    .toast-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); flex-shrink: 0; }
-    @keyframes toastIn { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
-    @keyframes toastOut { to { opacity:0; transform:translateY(10px); } }
-
-    /* ── Expanded card ── */
-    .card.expanded .card-desc {
-      -webkit-line-clamp: unset; overflow: visible;
-    }
-    .card.expanded { border-color: rgba(59,130,246,.5); }
-    .card.expanded::before { opacity: 1; }
-
-    /* ── Keyboard-focused card ── */
-    .card.kbd-focus {
-      border-color: rgba(99,102,241,.6);
-      box-shadow: 0 0 0 2px rgba(99,102,241,.2);
-    }
-
-    /* ── Clickable tag hover ── */
-    .tag.clickable { cursor: pointer; transition: filter .15s; }
-    .tag.clickable:hover { filter: brightness(1.3); }
-  </style>
+.kbd-hint{font-size:.63rem;color:var(--muted);line-height:1.8}
+.k{display:inline-flex;align-items:center;justify-content:center;background:var(--s2);border:1px solid var(--border);color:var(--muted);font-size:.58rem;padding:1px 5px;border-radius:3px;font-family:monospace}
+</style>
 </head>
 <body>
 
-<!-- Header -->
 <header>
-  <div class="logo">
-    <div class="logo-icon">M&A</div>
-    DealFlow
+  <a class="logo" href="/">
+    <div class="logo-mark">M&A</div>
+    <span class="logo-text">DealFlow<span class="logo-sub">Intelligence</span></span>
+  </a>
+
+  <div class="hstats">
+    <div class="hstat"><div class="hstat-val" id="hDeals" style="color:var(--blue)">—</div><div class="hstat-lbl">Deals Today</div></div>
+    <div class="hstat"><div class="hstat-val" id="hVol" style="color:var(--green)">—</div><div class="hstat-lbl">Est. Volume</div></div>
+    <div class="hstat"><div class="hstat-val" id="hSector" style="color:var(--gold)">—</div><div class="hstat-lbl">Top Sector</div></div>
+    <div class="hstat"><div class="hstat-val" id="hTime" style="color:var(--muted2)">—</div><div class="hstat-lbl">Updated</div></div>
   </div>
-  <div class="header-right">
-    <div class="live-badge"><span class="live-dot"></span>Live</div>
-    <button class="filter-toggle" onclick="toggleSidebar()">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
-      Filters
+
+  <div class="hactions">
+    <div class="claude-pill" id="cpill">
+      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+      AI Filtered
+    </div>
+    <div class="live-pill"><span class="live-dot"></span>Live</div>
+    <button class="ibtn" id="bmarkBtn" onclick="toggleBmView()" title="Saved deals">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+      <span class="badge" id="bmCount">0</span>
     </button>
-    <button class="refresh-btn" id="refreshBtn" onclick="loadNews(true)">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
-        <path d="M1 4v6h6M23 20v-6h-6"/>
-        <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4-4.64 4.36A9 9 0 0 1 3.51 15"/>
-      </svg>
-      Refresh
+    <button class="ibtn" id="filterBtn" onclick="openDrawer()" title="Filters &amp; Lookup">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="10" y1="18" x2="14" y2="18"/></svg>
+    </button>
+    <button class="ibtn" id="refBtn" onclick="loadNews(true)" title="Refresh (R)">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 4v6h6M23 20v-6h-6"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4-4.64 4.36A9 9 0 0 1 3.51 15"/></svg>
     </button>
   </div>
 </header>
 
-<!-- Stats Bar -->
-<div class="stats-bar">
-  <div class="stat">
-    <div class="stat-label">Stories Today</div>
-    <div class="stat-value blue" id="statCount">—</div>
-  </div>
-  <div class="stat">
-    <div class="stat-label">Deal Volume (est.)</div>
-    <div class="stat-value green" id="statVolume">—</div>
-  </div>
-  <div class="stat">
-    <div class="stat-label">Top Sector</div>
-    <div class="stat-value" id="statSector">—</div>
-  </div>
-  <div class="stat">
-    <div class="stat-label">Last Updated</div>
-    <div class="stat-value" id="statTime">—</div>
-  </div>
-  <div class="stat">
-    <div class="stat-label">Sources</div>
-    <div class="stat-value yellow" id="statSources">—</div>
-  </div>
-</div>
-
-<!-- Main Layout -->
-<div class="main">
-
-  <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
-
-  <!-- Left Sidebar -->
-  <aside class="left-sidebar" id="leftSidebar">
-    <div class="sidebar-close">
-      <span style="font-size:.7rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.1em">Filters</span>
-      <button class="sidebar-close-btn" onclick="toggleSidebar()">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M18 6 6 18M6 6l12 12"/></svg>
-      </button>
-    </div>
-    <div class="sidebar-section">
-      <div class="sidebar-title">Filter Feed</div>
-      <input class="search-box" id="searchBox" type="text" placeholder="Company, deal, sector…" oninput="applyFilters()" />
-    </div>
-
-    <div class="sidebar-section">
-      <div class="sidebar-title">Deal Lookup</div>
-      <div style="font-size:.73rem;color:var(--muted);margin-bottom:8px;">Search any company or deal live</div>
-      <div class="lookup-form">
-        <input class="lookup-input" id="lookupInput" type="text" placeholder="e.g. Cal AI, MyFitnessPal…" onkeydown="if(event.key==='Enter')dealSearch()" />
-        <button class="lookup-btn" id="lookupBtn" onclick="dealSearch()">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-        </button>
+<div class="page">
+  <div class="feed-col">
+    <div class="search-row">
+      <div class="sinput-wrap">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        <input class="sinput" id="sbox" type="text" placeholder="Filter by company, keyword, sector… (press /)" oninput="applyFilters()"/>
       </div>
     </div>
-
-    <div class="sidebar-section">
-      <div class="sidebar-title">M&amp;A Focus</div>
-      <div class="filter-pills">
-        <span class="pill active" id="maToggle" onclick="toggleMaOnly(this)">M&amp;A Only</span>
-        <span class="pill" id="allToggle" onclick="toggleMaOnly(this)">All Business</span>
-      </div>
-    </div>
-
-    <div class="sidebar-section">
-      <div class="sidebar-title">Deal Status</div>
-      <div class="filter-pills" id="statusFilters">
-        <span class="pill active" data-filter="status" data-value="all" onclick="togglePill(this,'status')">All</span>
-        <span class="pill" data-filter="status" data-value="announced" onclick="togglePill(this,'status')">Announced</span>
-        <span class="pill" data-filter="status" data-value="rumor" onclick="togglePill(this,'status')">Rumor</span>
-        <span class="pill" data-filter="status" data-value="closed" onclick="togglePill(this,'status')">Closed</span>
-        <span class="pill" data-filter="status" data-value="blocked" onclick="togglePill(this,'status')">Blocked</span>
-      </div>
-    </div>
-
-    <div class="sidebar-section">
-      <div class="sidebar-title">Sector</div>
-      <div class="filter-pills" id="sectorFilters">
-        <span class="pill active" data-filter="sector" data-value="all" onclick="togglePill(this,'sector')">All</span>
-        <span class="pill" data-filter="sector" data-value="tech" onclick="togglePill(this,'sector')">Tech</span>
-        <span class="pill" data-filter="sector" data-value="finance" onclick="togglePill(this,'sector')">Finance</span>
-        <span class="pill" data-filter="sector" data-value="healthcare" onclick="togglePill(this,'sector')">Healthcare</span>
-        <span class="pill" data-filter="sector" data-value="energy" onclick="togglePill(this,'sector')">Energy</span>
-        <span class="pill" data-filter="sector" data-value="media" onclick="togglePill(this,'sector')">Media</span>
-        <span class="pill" data-filter="sector" data-value="retail" onclick="togglePill(this,'sector')">Retail</span>
-      </div>
-    </div>
-
-    <div class="sidebar-section">
-      <div class="sidebar-title">Sources</div>
-      <div id="sourceList" class="filter-pills"></div>
-    </div>
-  </aside>
-
-  <!-- Main Feed -->
-  <main>
-    <div class="feed-header">
+    <div class="feed-top">
       <div>
-        <div class="feed-title">M&A Deal Feed</div>
-        <div class="feed-count" id="feedCount">Loading…</div>
+        <h2 id="feedTitle">M&amp;A Deal Feed</h2>
+        <div class="feed-sub" id="feedCount">Loading…</div>
       </div>
-      <select class="sort-select" id="sortSelect" onchange="applyFilters()">
+      <select class="sel" id="sortSel" onchange="applyFilters()">
         <option value="date">Newest First</option>
         <option value="oldest">Oldest First</option>
+        <option value="value">Highest Value</option>
       </select>
     </div>
     <div id="feed">
-      <!-- Loading skeletons -->
-      <div class="loading-card"><div class="skeleton sk-line" style="width:30%"></div><div class="skeleton sk-line" style="width:90%"></div><div class="skeleton sk-line" style="width:70%"></div></div>
-      <div class="loading-card"><div class="skeleton sk-line" style="width:25%"></div><div class="skeleton sk-line" style="width:80%"></div><div class="skeleton sk-line" style="width:60%"></div></div>
-      <div class="loading-card"><div class="skeleton sk-line" style="width:35%"></div><div class="skeleton sk-line" style="width:85%"></div><div class="skeleton sk-line" style="width:75%"></div></div>
-      <div class="loading-card"><div class="skeleton sk-line" style="width:28%"></div><div class="skeleton sk-line" style="width:75%"></div><div class="skeleton sk-line" style="width:55%"></div></div>
+      <div class="lcard"><div class="sk" style="width:28%"></div><div class="sk" style="width:88%"></div><div class="sk" style="width:60%"></div></div>
+      <div class="lcard"><div class="sk" style="width:22%"></div><div class="sk" style="width:82%"></div><div class="sk" style="width:68%"></div></div>
+      <div class="lcard"><div class="sk" style="width:32%"></div><div class="sk" style="width:76%"></div><div class="sk" style="width:55%"></div></div>
     </div>
-  </main>
+  </div>
 
-  <!-- Right Panel -->
-  <aside class="right-panel">
-    <div class="ticker-card">
-      <div class="ticker-title">Acquirer Watch</div>
-      <div id="tickerList">
-        <div class="ticker-item"><span class="ticker-name">MSFT</span><span class="ticker-change up">+1.2%</span></div>
-        <div class="ticker-item"><span class="ticker-name">GOOGL</span><span class="ticker-change down">-0.4%</span></div>
-        <div class="ticker-item"><span class="ticker-name">AMZN</span><span class="ticker-change up">+0.8%</span></div>
-        <div class="ticker-item"><span class="ticker-name">META</span><span class="ticker-change up">+2.1%</span></div>
-        <div class="ticker-item"><span class="ticker-name">JPM</span><span class="ticker-change down">-0.3%</span></div>
-      </div>
+  <aside class="rpanel">
+    <div class="rcard">
+      <div class="rtitle">Sector Activity</div>
+      <div id="sectorChart"></div>
     </div>
-
-    <div class="ticker-card">
-      <div class="ticker-title">Trending Topics</div>
+    <div class="rcard">
+      <div class="rtitle">Top Deals by Value</div>
+      <div id="topDeals"></div>
+    </div>
+    <div class="rcard">
+      <div class="rtitle">Trending Terms</div>
       <div id="trendList"></div>
     </div>
+    <div class="rcard">
+      <div class="rtitle">Shortcuts</div>
+      <div class="kbd-hint">
+        <k class="k">j/k</k> Navigate &nbsp;<k class="k">Enter</k> Open &nbsp;<k class="k">Space</k> Expand<br>
+        <k class="k">/</k> Search &nbsp;<k class="k">R</k> Refresh &nbsp;<k class="k">Esc</k> Clear
+      </div>
+    </div>
   </aside>
-
 </div>
 
-<div id="toastContainer"></div>
+<!-- Filter Drawer -->
+<div class="overlay" id="overlay" onclick="closeDrawer()"></div>
+<div class="drawer" id="drawer">
+  <div class="dhead">
+    Filters &amp; Deal Lookup
+    <button class="dclose" onclick="closeDrawer()">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6L6 18M6 6l12 12"/></svg>
+    </button>
+  </div>
+  <div class="dbody">
+    <div class="dsec">
+      <div class="dsec-t">Deal Lookup — live search</div>
+      <div class="lrow">
+        <input class="lin" id="lin" type="text" placeholder="e.g. Cal AI, MyFitnessPal…" onkeydown="if(event.key==='Enter')dealSearch()"/>
+        <button class="lgo" id="lgo" onclick="dealSearch()">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+          Go
+        </button>
+      </div>
+    </div>
+    <div class="dsec">
+      <div class="dsec-t">M&amp;A Focus</div>
+      <div class="pills">
+        <span class="pill active" id="maT" onclick="toggleMA(this)">M&amp;A Only</span>
+        <span class="pill" id="allT" onclick="toggleMA(this)">All Business</span>
+      </div>
+    </div>
+    <div class="dsec">
+      <div class="dsec-t">Deal Status</div>
+      <div class="pills" id="stPills">
+        <span class="pill active" data-f="status" data-v="all" onclick="setPill(this,'status')">All</span>
+        <span class="pill" data-f="status" data-v="announced" onclick="setPill(this,'status')">Announced</span>
+        <span class="pill" data-f="status" data-v="rumor" onclick="setPill(this,'status')">Rumor</span>
+        <span class="pill" data-f="status" data-v="closed" onclick="setPill(this,'status')">Closed</span>
+        <span class="pill" data-f="status" data-v="blocked" onclick="setPill(this,'status')">Blocked</span>
+      </div>
+    </div>
+    <div class="dsec">
+      <div class="dsec-t">Sector</div>
+      <div class="pills" id="secPills">
+        <span class="pill active" data-f="sector" data-v="all" onclick="setPill(this,'sector')">All</span>
+        <span class="pill" data-f="sector" data-v="tech" onclick="setPill(this,'sector')">Tech</span>
+        <span class="pill" data-f="sector" data-v="finance" onclick="setPill(this,'sector')">Finance</span>
+        <span class="pill" data-f="sector" data-v="healthcare" onclick="setPill(this,'sector')">Healthcare</span>
+        <span class="pill" data-f="sector" data-v="energy" onclick="setPill(this,'sector')">Energy</span>
+        <span class="pill" data-f="sector" data-v="media" onclick="setPill(this,'sector')">Media</span>
+        <span class="pill" data-f="sector" data-v="retail" onclick="setPill(this,'sector')">Retail</span>
+      </div>
+    </div>
+    <div class="dsec">
+      <div class="dsec-t">Sources</div>
+      <div class="pills" id="srcList"></div>
+    </div>
+  </div>
+</div>
+
+<button class="fab" onclick="openDrawer()">
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="10" y1="18" x2="14" y2="18"/></svg>
+</button>
+<div id="toasts"></div>
 
 <script>
 // ── State ────────────────────────────────────────────────
-let allItems = [];
-let activeFilters = { status: 'all', sector: 'all' };
-let maOnly = true;
-let searchMode = false; // true when showing deal-lookup results
-let searchQuery = '';
-let kbdIndex = -1;        // keyboard navigation index
-let prevCount = 0;        // for new-story detection
+let items=[], filters={status:'all',sector:'all'}, maOnly=true;
+let searchMode=false, searchQ='', bmView=false, kbdIdx=-1, prevCnt=0;
+let bookmarks = new Set(JSON.parse(localStorage.getItem('df_bm')||'[]'));
+
+const SC = {tech:'#4b9eff',finance:'#00c896',healthcare:'#c084fc',energy:'#fb923c',media:'#a78bfa',retail:'#34d399',general:'#4d6680'};
+const tagCls = {announced:'t-ann',rumor:'t-rum',closed:'t-cls',blocked:'t-blk'};
+const tagLbl = {announced:'Announced',rumor:'Rumor',closed:'Closed',blocked:'Blocked'};
+const cap = s => s.charAt(0).toUpperCase()+s.slice(1);
 
 // ── Toast ─────────────────────────────────────────────────
-function showToast(msg, type = '') {
-  const container = document.getElementById('toastContainer');
-  const el = document.createElement('div');
-  el.className = `toast ${type}`;
-  el.innerHTML = `<span class="toast-dot" style="${type==='green'?'':'background:var(--accent)'}"></span>${msg}`;
-  container.appendChild(el);
-  setTimeout(() => {
-    el.style.animation = 'toastOut .25s ease forwards';
-    setTimeout(() => el.remove(), 250);
-  }, 3500);
+function toast(msg, type='') {
+  const el=document.createElement('div');
+  el.className=`toast ${type}`;
+  const c=type==='green'?'var(--green)':type==='red'?'var(--red)':'var(--blue)';
+  el.innerHTML=`<span class="tdot" style="background:${c}"></span>${msg}`;
+  document.getElementById('toasts').appendChild(el);
+  setTimeout(()=>{el.style.animation='tout .2s ease forwards';setTimeout(()=>el.remove(),200);},3200);
 }
 
-// ── Helpers ──────────────────────────────────────────────
-function timeAgo(date) {
-  const d = new Date(date);
-  if (isNaN(d)) return '';
-  const diff = (Date.now() - d) / 1000;
-  if (diff < 60) return 'just now';
-  if (diff < 3600) return `${Math.floor(diff/60)}m ago`;
-  if (diff < 86400) return `${Math.floor(diff/3600)}h ago`;
-  return `${Math.floor(diff/86400)}d ago`;
-}
+// ── Drawer ────────────────────────────────────────────────
+const openDrawer  = ()=>{ document.getElementById('drawer').classList.add('open'); document.getElementById('overlay').classList.add('open'); };
+const closeDrawer = ()=>{ document.getElementById('drawer').classList.remove('open'); document.getElementById('overlay').classList.remove('open'); };
 
-function tagClass(status) {
-  return { announced:'tag-deal', rumor:'tag-rumor', closed:'tag-closed', blocked:'tag-blocked' }[status] || 'tag-deal';
+// ── Helpers ───────────────────────────────────────────────
+function ago(d){
+  const s=(Date.now()-new Date(d))/1000;
+  if(isNaN(s)) return '';
+  if(s<60) return 'just now';
+  if(s<3600) return `${Math.floor(s/60)}m ago`;
+  if(s<86400) return `${Math.floor(s/3600)}h ago`;
+  return `${Math.floor(s/86400)}d ago`;
 }
-function tagLabel(status) {
-  return { announced:'Announced', rumor:'Rumor', closed:'Closed', blocked:'Blocked' }[status] || status;
+function isNew(d){ return (Date.now()-new Date(d))/1000 < 7200; }
+function valNum(v){
+  if(!v) return 0;
+  const m=v.match(/([\d,.]+)\s*(trillion|billion|bn|million|mn)/i);
+  if(!m) return 0;
+  const n=parseFloat(m[1].replace(/,/g,''));
+  const u=m[2].toLowerCase();
+  return u.startsWith('t')?n*1e12:u.startsWith('b')?n*1e9:n*1e6;
+}
+function parties(title){
+  const pp=[
+    [/^(.+?)\s+acquires?\s+(.+?)(?:\s+for\b|\s+in\b|\s*[-–—]|$)/i,false],
+    [/^(.+?)\s+to\s+(?:buy|acquire)\s+(.+?)(?:\s+for\b|\s+in\b|\s*[-–—]|$)/i,false],
+    [/^(.+?)\s+buys?\s+(.+?)(?:\s+for\b|\s+in\b|\s*[-–—]|$)/i,false],
+    [/^(.+?)\s+(?:is\s+)?(?:being\s+)?acquired\s+by\s+(.+?)(?:\s+for\b|\s+in\b|\s*[-–—]|$)/i,true],
+  ];
+  for(const [p,flip] of pp){
+    const m=title.match(p);
+    if(m&&m[1].length<65&&m[2].length<65){
+      const a=m[1].replace(/^(the|a)\s+/i,'').trim();
+      const b=m[2].replace(/^(the|a)\s+/i,'').trim();
+      return flip?{acq:b,tgt:a}:{acq:a,tgt:b};
+    }
+  }
+  return null;
+}
+function saveBM(){
+  localStorage.setItem('df_bm',JSON.stringify([...bookmarks]));
+  const n=bookmarks.size;
+  const el=document.getElementById('bmCount');
+  el.textContent=n; el.style.display=n?'flex':'none';
 }
 
 // ── Fetch ─────────────────────────────────────────────────
-async function loadNews(force = false) {
-  if (searchMode) return; // don't clobber search results on auto-refresh
-  const btn = document.getElementById('refreshBtn');
+async function loadNews(force=false){
+  if(searchMode) return;
+  const btn=document.getElementById('refBtn');
   btn.classList.add('spinning');
-
-  const oldCount = prevCount;
-  try {
-    const url = force ? '/api/news?refresh=1' : '/api/news';
-    const r = await fetch(url, { signal: AbortSignal.timeout(30000) });
-    const data = await r.json();
-    allItems = data.items || [];
-    prevCount = allItems.length;
-  } catch (e) {
-    console.error('Failed to load news:', e);
-    allItems = [];
-  }
-
-  updateStats();
-  updateSourcePills();
-  applyFilters();
-  updateTrends();
+  const old=prevCnt;
+  try{
+    const r=await fetch(force?'/api/news?refresh=1':'/api/news',{signal:AbortSignal.timeout(35000)});
+    const d=await r.json();
+    items=d.items||[]; prevCnt=items.length;
+    if(d.claude) document.getElementById('cpill').classList.add('on');
+  }catch(e){console.error(e);items=[];}
+  updateStats(); updateSrc(); updateRPanel(); applyFilters();
   btn.classList.remove('spinning');
-  document.getElementById('statTime').textContent = new Date().toLocaleTimeString();
-
-  if (force && allItems.length > oldCount) {
-    const newCount = allItems.length - oldCount;
-    showToast(`${newCount} new stor${newCount === 1 ? 'y' : 'ies'} added`, 'green');
-  } else if (force) {
-    showToast('Feed is up to date');
+  document.getElementById('hTime').textContent=new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+  if(force){
+    const diff=items.length-old;
+    if(diff>0) toast(`${diff} new deal${diff>1?'s':''} added`,'green');
+    else toast('Feed is up to date');
   }
 }
 
-// ── Deal Lookup ───────────────────────────────────────────
-async function dealSearch() {
-  const input = document.getElementById('lookupInput');
-  const query = input.value.trim();
-  if (!query) return;
-
-  const btn = document.getElementById('lookupBtn');
-  btn.classList.add('spinning');
-  btn.disabled = true;
-
-  try {
-    const r = await fetch(`/api/search?q=${encodeURIComponent(query)}`, { signal: AbortSignal.timeout(20000) });
-    const data = await r.json();
-    const results = data.items || [];
-    searchMode = true;
-    searchQuery = query;
-    renderFeed(results, query);
-    if (results.length === 0) {
-      showToast(`No results found for "${query}"`);
-    } else {
-      showToast(`Found ${results.length} result${results.length===1?'':'s'} for "${query}"`, 'green');
-    }
-  } catch (e) {
-    showToast('Lookup failed — check connection');
-  }
-
-  btn.classList.remove('spinning');
-  btn.disabled = false;
+async function dealSearch(){
+  const q=document.getElementById('lin').value.trim();
+  if(!q) return;
+  const btn=document.getElementById('lgo');
+  btn.classList.add('spinning');btn.disabled=true;
+  try{
+    const r=await fetch(`/api/search?q=${encodeURIComponent(q)}`,{signal:AbortSignal.timeout(20000)});
+    const d=await r.json();
+    searchMode=true;searchQ=q;
+    renderFeed(d.items||[],q);
+    document.getElementById('feedTitle').textContent='Search Results';
+    toast(d.items?.length?`${d.items.length} results for "${q}"`:`No results for "${q}"`,d.items?.length?'green':'');
+  }catch(e){toast('Lookup failed','red');}
+  btn.classList.remove('spinning');btn.disabled=false;
+  closeDrawer();
 }
 
-function clearSearch() {
-  searchMode = false;
-  searchQuery = '';
-  document.getElementById('lookupInput').value = '';
+function clearSearch(){
+  searchMode=false;searchQ='';
+  document.getElementById('lin').value='';
+  document.getElementById('feedTitle').textContent=bmView?'Saved Deals':'M&A Deal Feed';
   applyFilters();
 }
 
 // ── Render ────────────────────────────────────────────────
-function renderFeed(items, lookupQuery = null) {
-  const feed = document.getElementById('feed');
-  kbdIndex = -1;
+function renderFeed(arr,lq=null){
+  const feed=document.getElementById('feed');
+  kbdIdx=-1;
+  const banner=lq?`<div class="rbanner"><span class="rbtxt">Live results for "<strong>${lq}</strong>" — ${arr.length} found</span><button class="rbclr" onclick="clearSearch()">✕ Clear</button></div>`:'';
 
-  let banner = '';
-  if (lookupQuery) {
-    banner = `<div class="results-banner">
-      <span class="results-banner-text">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13" style="vertical-align:-2px;margin-right:5px"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-        Showing live results for "<strong>${lookupQuery}</strong>" — ${items.length} found
-      </span>
-      <button class="results-clear" onclick="clearSearch()">✕ Clear</button>
-    </div>`;
-  }
-
-  if (!items.length) {
-    feed.innerHTML = banner + `<div class="empty">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M12 8v4m0 4h.01"/></svg>
-      <div>${lookupQuery ? `No results found for "${lookupQuery}"` : 'No stories match your filters'}</div>
-    </div>`;
+  if(!arr.length){
+    feed.innerHTML=banner+`<div class="empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M12 8v4m0 4h.01"/></svg><div>${lq?`No results for "${lq}"`:bmView?'No saved deals yet':'No stories match filters'}</div></div>`;
+    document.getElementById('feedCount').textContent='0 deals';
     return;
   }
 
-  feed.innerHTML = banner + items.map((item, idx) => `
-    <div class="card" data-idx="${idx}" data-link="${item.link}" onclick="toggleCard(event, this)">
-      <div class="card-top">
-        <span class="card-source">${item.source} · <span class="timestamp">${timeAgo(item.pubDate)}</span></span>
-        <div class="card-meta">
-          ${item.maRelated ? `<span class="tag clickable ${tagClass(item.status)}" onclick="filterByTag(event,'status','${item.status}')">${tagLabel(item.status)}</span>` : ''}
-          ${item.sector !== 'general' ? `<span class="tag clickable" style="background:rgba(99,102,241,.1);color:#818cf8" onclick="filterByTag(event,'sector','${item.sector}')">${item.sector}</span>` : ''}
-        </div>
+  feed.innerHTML=banner+arr.map((item,i)=>{
+    const c=SC[item.sector]||SC.general;
+    const pt=parties(item.title);
+    const bm=bookmarks.has(item.id||item.link);
+    const fresh=isNew(item.pubDate);
+    const sid=JSON.stringify(item.id||item.link||'').replace(/"/g,'&quot;');
+    const lnk=(item.link||'#').replace(/'/g,'%27');
+    const ttl=item.title.replace(/'/g,"\\'").substring(0,80);
+    return `<div class="card" data-idx="${i}" data-link="${item.link||''}" data-id="${sid}" style="--sc:${c}" onclick="cardClick(event,this)">
+  <div class="ci">
+    <div class="cheader">
+      <div class="cmeta">
+        <span class="csrc">${item.source}</span>
+        <span class="ctime">${ago(item.pubDate)}</span>
+        ${fresh?'<span class="new-badge">NEW</span>':''}
       </div>
-      <div class="card-title"><a href="${item.link}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${item.title}</a></div>
-      ${item.description ? `<div class="card-desc">${item.description}</div>` : ''}
-      <div class="card-footer">
-        ${item.dealValue ? `<span class="card-chip deal-value">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-          ${item.dealValue}
-        </span>` : ''}
-        <span class="card-chip">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
-          ${new Date(item.pubDate).toLocaleDateString('en-US',{month:'short',day:'numeric'})}
-        </span>
-        <span class="card-chip">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-          ${item.sourceFull}
-        </span>
+      <div class="cbtns">
+        <button class="cbtn ${bm?'saved':''}" onclick="toggleBM(event,'${item.id||item.link||''}')" title="Save">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="${bm?'currentColor':'none'}" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+        </button>
+        <button class="cbtn" onclick="share(event,'${lnk}','${ttl}')" title="Share">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+        </button>
       </div>
     </div>
-  `).join('');
-
-  document.getElementById('feedCount').textContent = `${items.length} stories`;
+    <div class="ctags">
+      ${item.maRelated?`<span class="tag ${tagCls[item.status]||'t-ann'}" onclick="tagFilter(event,'status','${item.status}')">${tagLbl[item.status]||item.status}</span>`:''}
+      ${item.sector&&item.sector!=='general'?`<span class="tag" style="background:${c}18;color:${c};border-color:${c}2e" onclick="tagFilter(event,'sector','${item.sector}')">${cap(item.sector)}</span>`:''}
+      ${item.dealValue?`<span class="dval"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>${item.dealValue}</span>`:''}
+    </div>
+    <div class="ctitle"><a href="${item.link||'#'}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${item.title}</a></div>
+    ${pt?`<div class="parties"><div class="party"><span class="plbl">Acquirer</span>${pt.acq}</div><span class="parrow">→</span><div class="party"><span class="plbl">Target</span>${pt.tgt}</div></div>`:''}
+    ${item.description?`<div class="cdesc">${item.description}</div>`:''}
+    <div class="cfoot">
+      <span class="cchip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>${new Date(item.pubDate).toLocaleDateString('en-US',{month:'short',day:'numeric'})}</span>
+      <span class="cchip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>${item.sourceFull}</span>
+    </div>
+  </div>
+</div>`;
+  }).join('');
+  document.getElementById('feedCount').textContent=`${arr.length} deal${arr.length!==1?'s':''}`;
 }
 
-// ── Card interaction ──────────────────────────────────────
-function toggleCard(event, card) {
-  // Don't expand when clicking links/tags
-  if (event.target.tagName === 'A' || event.target.closest('a') || event.target.classList.contains('tag')) return;
+// ── Card actions ──────────────────────────────────────────
+function cardClick(e,card){
+  if(e.target.tagName==='A'||e.target.closest('a')||e.target.classList.contains('tag')||e.target.closest('.cbtn')) return;
   card.classList.toggle('expanded');
 }
-
-// ── Click tag to filter ───────────────────────────────────
-function filterByTag(event, filterType, value) {
-  event.stopPropagation();
-  if (searchMode) return; // don't filter in search results mode
-  const pill = document.querySelector(`[data-filter="${filterType}"][data-value="${value}"]`);
-  if (pill) {
-    togglePill(pill, filterType);
-    pill.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    showToast(`Filtering by ${filterType}: ${value}`);
-  }
+function toggleBM(e,id){
+  e.stopPropagation();
+  if(!id) return;
+  if(bookmarks.has(id)){bookmarks.delete(id);toast('Removed from saved');}
+  else{bookmarks.add(id);toast('Deal saved','green');}
+  saveBM();
+  const btn=e.currentTarget;
+  const on=bookmarks.has(id);
+  btn.classList.toggle('saved',on);
+  btn.querySelector('svg').setAttribute('fill',on?'currentColor':'none');
+  if(bmView) applyFilters();
+}
+function share(e,link,title){
+  e.stopPropagation();
+  if(navigator.share) navigator.share({title,url:link}).catch(()=>{});
+  else navigator.clipboard.writeText(link).then(()=>toast('Link copied')).catch(()=>toast('Could not copy','red'));
+}
+function tagFilter(e,type,val){
+  e.stopPropagation();
+  if(searchMode) return;
+  const p=document.querySelector(`[data-f="${type}"][data-v="${val}"]`);
+  if(p){setPill(p,type);toast(`Filter: ${cap(val)}`);openDrawer();}
 }
 
-// ── Filters ───────────────────────────────────────────────
-function applyFilters() {
-  if (searchMode) return;
-  const query = document.getElementById('searchBox').value.toLowerCase();
-  const sort = document.getElementById('sortSelect').value;
-
-  let items = [...allItems];
-  if (maOnly) items = items.filter(i => i.maRelated);
-  if (activeFilters.status !== 'all') items = items.filter(i => i.status === activeFilters.status);
-  if (activeFilters.sector !== 'all') items = items.filter(i => i.sector === activeFilters.sector);
-  if (query) {
-    items = items.filter(i =>
-      i.title.toLowerCase().includes(query) ||
-      i.description.toLowerCase().includes(query) ||
-      i.source.toLowerCase().includes(query)
-    );
-  }
-  if (sort === 'oldest') items.reverse();
-  renderFeed(items);
-}
-
-function toggleMaOnly(el) {
-  maOnly = (el.id === 'maToggle');
-  document.getElementById('maToggle').classList.toggle('active', maOnly);
-  document.getElementById('allToggle').classList.toggle('active', !maOnly);
+// ── Bookmark view ─────────────────────────────────────────
+function toggleBmView(){
+  bmView=!bmView;
+  document.getElementById('bmarkBtn').classList.toggle('on',bmView);
+  document.getElementById('feedTitle').textContent=bmView?'Saved Deals':'M&A Deal Feed';
+  if(bmView){searchMode=false;document.getElementById('lin').value='';}
   applyFilters();
 }
 
-function togglePill(el, filterType) {
-  const group = document.querySelectorAll(`[data-filter="${filterType}"]`);
-  group.forEach(p => p.classList.remove('active'));
+// ── Filters ───────────────────────────────────────────────
+function applyFilters(){
+  if(searchMode) return;
+  const q=document.getElementById('sbox').value.toLowerCase();
+  const sort=document.getElementById('sortSel').value;
+  let arr=bmView?items.filter(i=>bookmarks.has(i.id||i.link)):[...items];
+  if(!bmView&&maOnly) arr=arr.filter(i=>i.maRelated);
+  if(filters.status!=='all') arr=arr.filter(i=>i.status===filters.status);
+  if(filters.sector!=='all') arr=arr.filter(i=>i.sector===filters.sector);
+  if(q) arr=arr.filter(i=>(i.title+' '+i.description+' '+i.source).toLowerCase().includes(q));
+  if(sort==='oldest') arr=[...arr].reverse();
+  else if(sort==='value') arr=[...arr].sort((a,b)=>valNum(b.dealValue)-valNum(a.dealValue));
+  renderFeed(arr);
+}
+function toggleMA(el){
+  maOnly=el.id==='maT';
+  document.getElementById('maT').classList.toggle('active',maOnly);
+  document.getElementById('allT').classList.toggle('active',!maOnly);
+  applyFilters();
+}
+function setPill(el,type){
+  document.querySelectorAll(`[data-f="${type}"]`).forEach(p=>p.classList.remove('active'));
   el.classList.add('active');
-  activeFilters[filterType] = el.dataset.value;
+  filters[type]=el.dataset.v;
   applyFilters();
 }
 
 // ── Stats ─────────────────────────────────────────────────
-function updateStats() {
-  const maItems = allItems.filter(i => i.maRelated);
-  const today = new Date().toDateString();
-  const todayMa = maItems.filter(i => new Date(i.pubDate).toDateString() === today);
-  document.getElementById('statCount').textContent = todayMa.length || maItems.length;
-  const withValues = maItems.filter(i => i.dealValue);
-  document.getElementById('statVolume').textContent = withValues.length > 0
-    ? `${withValues.length} deals w/ values` : 'N/A';
-  const sectorCounts = {};
-  allItems.forEach(i => { sectorCounts[i.sector] = (sectorCounts[i.sector]||0)+1; });
-  const topSector = Object.entries(sectorCounts).sort((a,b)=>b[1]-a[1])[0];
-  document.getElementById('statSector').textContent = topSector
-    ? topSector[0].charAt(0).toUpperCase() + topSector[0].slice(1) : '—';
-  const sources = new Set(allItems.map(i => i.source));
-  document.getElementById('statSources').textContent = sources.size;
+function updateStats(){
+  const ma=items.filter(i=>i.maRelated);
+  const today=new Date().toDateString();
+  const tday=ma.filter(i=>new Date(i.pubDate).toDateString()===today);
+  document.getElementById('hDeals').textContent=tday.length||ma.length;
+  const vals=ma.filter(i=>i.dealValue);
+  if(vals.length){
+    const tot=vals.reduce((s,i)=>s+valNum(i.dealValue),0);
+    document.getElementById('hVol').textContent=
+      tot>=1e12?`$${(tot/1e12).toFixed(1)}T`:
+      tot>=1e9?`$${(tot/1e9).toFixed(1)}B`:
+      tot>=1e6?`$${(tot/1e6).toFixed(0)}M`:`${vals.length} w/ values`;
+  } else { document.getElementById('hVol').textContent='—'; }
+  const sc={};
+  items.forEach(i=>{sc[i.sector]=(sc[i.sector]||0)+1;});
+  const top=Object.entries(sc).filter(([s])=>s!=='general').sort((a,b)=>b[1]-a[1])[0];
+  document.getElementById('hSector').textContent=top?cap(top[0]):'—';
 }
-
-function updateSourcePills() {
-  const sources = [...new Set(allItems.map(i => i.source))];
-  document.getElementById('sourceList').innerHTML = sources.map(s =>
-    `<span class="pill active" style="font-size:.68rem">${s}</span>`
-  ).join('');
+function updateSrc(){
+  const srcs=[...new Set(items.map(i=>i.source))];
+  document.getElementById('srcList').innerHTML=srcs.map(s=>`<span class="pill active" style="font-size:.64rem">${s}</span>`).join('');
 }
+function updateRPanel(){
+  // Sector chart
+  const sc={};
+  items.forEach(i=>{if(i.sector!=='general')sc[i.sector]=(sc[i.sector]||0)+1;});
+  const sorted=Object.entries(sc).sort((a,b)=>b[1]-a[1]);
+  const mx=sorted[0]?.[1]||1;
+  document.getElementById('sectorChart').innerHTML=sorted.map(([s,c])=>`
+    <div class="srow">
+      <span class="sname">${cap(s)}</span>
+      <div class="sbarw"><div class="sbar" style="width:${Math.round(c/mx*100)}%;background:${SC[s]||'#4d6680'}"></div></div>
+      <span class="scnt">${c}</span>
+    </div>`).join('');
 
-function updateTrends() {
-  const wordMap = {};
-  allItems.slice(0, 50).forEach(item => {
-    const words = item.title.split(/\s+/).filter(w => w.length > 4 && !/^(with|that|this|from|into|over|when|also|been|have|will|they|their|more|some|than|other)$/i.test(w));
-    words.forEach(w => {
-      const key = w.replace(/[^a-zA-Z]/g,'').toLowerCase();
-      if (key.length > 4) wordMap[key] = (wordMap[key]||0)+1;
-    });
-  });
-  const top = Object.entries(wordMap).sort((a,b)=>b[1]-a[1]).slice(0,8);
-  document.getElementById('trendList').innerHTML = top.map(([word,count],i) =>
-    `<div class="trend-item">
-      <div class="trend-rank">${i+1}</div>
-      <div class="trend-text">${word.charAt(0).toUpperCase()+word.slice(1)} <span style="color:var(--muted);font-size:.7rem">(${count})</span></div>
-    </div>`
-  ).join('');
+  // Top deals
+  const top=[...items].filter(i=>i.dealValue).sort((a,b)=>valNum(b.dealValue)-valNum(a.dealValue)).slice(0,5);
+  document.getElementById('topDeals').innerHTML=top.length
+    ?top.map(i=>`<div class="tdeal"><div class="tdeal-t">${i.title.substring(0,68)}${i.title.length>68?'…':''}</div><div class="tdeal-v">${i.dealValue}</div><div class="tdeal-m">${i.source} · ${ago(i.pubDate)}</div></div>`).join('')
+    :'<div style="color:var(--muted);font-size:.72rem">No valued deals yet</div>';
+
+  // Trending
+  const wm={};
+  const stop=/^(with|that|this|from|into|over|when|also|been|have|will|they|their|more|some|than|other|after|would|could|about|deal|says|said|plans|seeks|amid|amid|following|despite|amid|amid)$/i;
+  items.slice(0,60).forEach(i=>i.title.split(/\s+/).forEach(w=>{
+    const k=w.replace(/[^a-zA-Z]/g,'').toLowerCase();
+    if(k.length>3&&!stop.test(k)) wm[k]=(wm[k]||0)+1;
+  }));
+  const tr=Object.entries(wm).sort((a,b)=>b[1]-a[1]).slice(0,8);
+  document.getElementById('trendList').innerHTML=tr.map(([w,c],i)=>`
+    <div class="tritem"><div class="trrank">${i+1}</div><div class="trtxt">${cap(w)} <span style="color:var(--muted);font-size:.62rem">(${c})</span></div></div>`).join('');
 }
 
 // ── Keyboard shortcuts ────────────────────────────────────
-document.addEventListener('keydown', e => {
-  const tag = document.activeElement.tagName;
-  const inInput = tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT';
-
-  // / → focus filter search
-  if (e.key === '/' && !inInput) {
-    e.preventDefault();
-    document.getElementById('searchBox').focus();
-    return;
+document.addEventListener('keydown',e=>{
+  const tag=document.activeElement.tagName;
+  const inp=/INPUT|TEXTAREA|SELECT/.test(tag);
+  if(e.key==='/'&&!inp){e.preventDefault();document.getElementById('sbox').focus();return;}
+  if((e.key==='r'||e.key==='R')&&!inp){loadNews(true);return;}
+  if(e.key==='Escape'){
+    if(document.getElementById('drawer').classList.contains('open')){closeDrawer();return;}
+    if(searchMode){clearSearch();return;}
+    if(bmView){toggleBmView();return;}
+    document.getElementById('sbox').value='';applyFilters();document.getElementById('sbox').blur();return;
   }
-  // R → refresh
-  if ((e.key === 'r' || e.key === 'R') && !inInput) {
-    loadNews(true);
-    return;
-  }
-  // Escape → clear search box or search mode
-  if (e.key === 'Escape') {
-    if (searchMode) { clearSearch(); return; }
-    document.getElementById('searchBox').value = '';
-    applyFilters();
-    document.getElementById('searchBox').blur();
-    return;
-  }
-
-  if (inInput) return;
-
-  const cards = [...document.querySelectorAll('#feed .card')];
-  if (!cards.length) return;
-
-  // j / ArrowDown → next card
-  if (e.key === 'j' || e.key === 'ArrowDown') {
-    e.preventDefault();
-    cards.forEach(c => c.classList.remove('kbd-focus'));
-    kbdIndex = Math.min(kbdIndex + 1, cards.length - 1);
-    cards[kbdIndex].classList.add('kbd-focus');
-    cards[kbdIndex].scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    return;
-  }
-  // k / ArrowUp → prev card
-  if (e.key === 'k' || e.key === 'ArrowUp') {
-    e.preventDefault();
-    cards.forEach(c => c.classList.remove('kbd-focus'));
-    kbdIndex = Math.max(kbdIndex - 1, 0);
-    cards[kbdIndex].classList.add('kbd-focus');
-    cards[kbdIndex].scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    return;
-  }
-  // Enter → open focused card
-  if (e.key === 'Enter' && kbdIndex >= 0 && cards[kbdIndex]) {
-    const link = cards[kbdIndex].dataset.link;
-    if (link) window.open(link, '_blank', 'noopener');
-    return;
-  }
-  // Space → expand/collapse focused card
-  if (e.key === ' ' && kbdIndex >= 0 && cards[kbdIndex]) {
-    e.preventDefault();
-    cards[kbdIndex].classList.toggle('expanded');
+  if(inp) return;
+  const cards=[...document.querySelectorAll('#feed .card')];
+  if(!cards.length) return;
+  if(e.key==='j'||e.key==='ArrowDown'){
+    e.preventDefault();cards.forEach(c=>c.classList.remove('kfocus'));
+    kbdIdx=Math.min(kbdIdx+1,cards.length-1);
+    cards[kbdIdx].classList.add('kfocus');
+    cards[kbdIdx].scrollIntoView({behavior:'smooth',block:'nearest'});
+  }else if(e.key==='k'||e.key==='ArrowUp'){
+    e.preventDefault();cards.forEach(c=>c.classList.remove('kfocus'));
+    kbdIdx=Math.max(kbdIdx-1,0);
+    cards[kbdIdx].classList.add('kfocus');
+    cards[kbdIdx].scrollIntoView({behavior:'smooth',block:'nearest'});
+  }else if(e.key==='Enter'&&kbdIdx>=0){
+    const l=cards[kbdIdx]?.dataset.link;if(l)window.open(l,'_blank','noopener');
+  }else if(e.key===' '&&kbdIdx>=0){
+    e.preventDefault();cards[kbdIdx]?.classList.toggle('expanded');
   }
 });
 
-// ── Mobile sidebar ────────────────────────────────────────
-function toggleSidebar() {
-  document.getElementById('leftSidebar').classList.toggle('open');
-  document.getElementById('sidebarOverlay').classList.toggle('open');
-}
-
 // ── Boot ──────────────────────────────────────────────────
+saveBM();
 loadNews();
-setInterval(loadNews, 5 * 60 * 1000);
+setInterval(loadNews,5*60*1000);
 </script>
-
 </body>
 </html>

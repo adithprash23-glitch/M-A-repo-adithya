@@ -21,6 +21,7 @@ PORT               = int(os.environ.get('PORT', 8000))
 CACHE_TTL          = 300
 ANTHROPIC_API_KEY  = os.environ.get('ANTHROPIC_API_KEY', '')
 GEMINI_API_KEY     = os.environ.get('GEMINI_API_KEY', '')
+GROQ_API_KEY       = os.environ.get('GROQ_API_KEY', '')
 
 FEEDS = [
     {"name": "Reuters M&A",       "short": "Reuters",
@@ -307,6 +308,46 @@ def call_gemini(prompt):
             print(f"[Gemini] {last_err}")
     return None, last_err
 
+GROQ_MODELS = [
+    "llama-3.3-70b-versatile",
+    "llama3-70b-8192",
+    "mixtral-8x7b-32768",
+    "llama3-8b-8192",
+]
+
+def call_groq(prompt):
+    """Call Groq (OpenAI-compatible) API. Returns (text, error_str)."""
+    if not GROQ_API_KEY: return None, "GROQ_API_KEY not set"
+    last_err = ""
+    for model in GROQ_MODELS:
+        try:
+            payload = json.dumps({
+                "model": model,
+                "messages": [{"role": "user", "content": prompt}],
+                "max_tokens": 700,
+                "temperature": 0.7,
+            }).encode()
+            req = urllib.request.Request(
+                "https://api.groq.com/openai/v1/chat/completions",
+                data=payload,
+                headers={"Authorization": f"Bearer {GROQ_API_KEY}",
+                         "Content-Type": "application/json"})
+            try:
+                resp = urllib.request.urlopen(req, timeout=30, context=SSL_CTX)
+            except urllib.error.HTTPError as he:
+                body = he.read().decode()
+                last_err = f"HTTP {he.code} ({model}): {body[:200]}"
+                print(f"[Groq] {last_err}")
+                continue
+            result = json.loads(resp.read().decode())
+            text = result['choices'][0]['message']['content'].strip()
+            print(f"[Groq] OK with model={model}")
+            return text, None
+        except Exception as e:
+            last_err = f"{type(e).__name__} ({model}): {e}"
+            print(f"[Groq] {last_err}")
+    return None, last_err
+
 def parse_json_from_text(text):
     """Extract JSON from AI response (handles markdown code blocks)."""
     if not text: return {}
@@ -368,8 +409,9 @@ Return ONLY valid JSON (no markdown, no extra text):
   "industry_trajectory": "<1-2 sentences: where is this industry heading based on this deal?>"
 }}"""
 
-    # Run both in parallel
-    results = {"claude": None, "gemini": None, "claude_err": None, "gemini_err": None}
+    # Run all three in parallel
+    results = {"claude": None, "gemini": None, "groq": None,
+               "claude_err": None, "gemini_err": None, "groq_err": None}
 
     def run_claude():
         raw, err = call_claude(claude_prompt)
@@ -381,25 +423,40 @@ Return ONLY valid JSON (no markdown, no extra text):
         results["gemini"] = parse_json_from_text(raw) if raw else {}
         results["gemini_err"] = err
 
-    t1 = threading.Thread(target=run_claude)
-    t2 = threading.Thread(target=run_gemini)
-    t1.start(); t2.start()
-    t1.join(timeout=35); t2.join(timeout=35)
+    def run_groq():
+        # Groq uses the same corporate-strategy prompt as Claude
+        raw, err = call_groq(claude_prompt)
+        results["groq"] = parse_json_from_text(raw) if raw else {}
+        results["groq_err"] = err
+
+    threads = [threading.Thread(target=run_claude),
+               threading.Thread(target=run_gemini)]
+    if GROQ_API_KEY:
+        threads.append(threading.Thread(target=run_groq))
+
+    for t in threads: t.start()
+    for t in threads: t.join(timeout=35)
 
     return {
-        "claude":      results["claude"]     or {},
-        "gemini":      results["gemini"]     or {},
+        "claude":      results["claude"]  or {},
+        "gemini":      results["gemini"]  or {},
+        "groq":        results["groq"]    or {},
         "has_claude":  bool(ANTHROPIC_API_KEY),
         "has_gemini":  bool(GEMINI_API_KEY),
+        "has_groq":    bool(GROQ_API_KEY),
         "claude_err":  results["claude_err"],
         "gemini_err":  results["gemini_err"],
+        "groq_err":    results["groq_err"],
     }
 
 # ── Claude quality filter ─────────────────────────────────────────────────────
 
 def claude_filter(items):
-    if not ANTHROPIC_API_KEY or not items: return items
+    """Filter articles using Claude, falling back to Groq if Claude unavailable."""
+    if not items: return items
+    if not ANTHROPIC_API_KEY and not GROQ_API_KEY: return items
     kept_all = []
+    provider = "Claude" if ANTHROPIC_API_KEY else "Groq"
     for start in range(0, len(items), 40):
         batch = items[start:start+40]
         articles_text = '\n'.join(f'{i+1}. {item["title"]}' for i,item in enumerate(batch))
@@ -412,8 +469,11 @@ def claude_filter(items):
             "Respond with ONLY a JSON array of integers, e.g. [1, 3, 5]."
         )
         try:
-            raw, err = call_claude(prompt)
-            if err: print(f"[Claude filter] {err}")
+            raw, err = (call_claude(prompt) if ANTHROPIC_API_KEY else (None, "no key"))
+            if not raw and GROQ_API_KEY:
+                raw, err = call_groq(prompt)
+                if raw: provider = "Groq"
+            if err and not raw: print(f"[{provider} filter] {err}")
             m = re.search(r'\[[\d,\s]*\]', raw or '')
             if m:
                 indices = json.loads(m.group(0))
@@ -421,8 +481,8 @@ def claude_filter(items):
             else:
                 kept_all.extend(batch)
         except Exception as e:
-            print(f"[Claude filter] {e}"); kept_all.extend(batch)
-    print(f"[Claude filter] {len(items)} → {len(kept_all)}")
+            print(f"[AI filter] {e}"); kept_all.extend(batch)
+    print(f"[{provider} filter] {len(items)} → {len(kept_all)}")
     return kept_all
 
 # ── RSS helpers ───────────────────────────────────────────────────────────────
@@ -581,24 +641,26 @@ class Handler(BaseHTTPRequestHandler):
             news=get_news(force=force)
             self.send_json({"items":news,"count":len(news),
                             "ts":datetime.now(timezone.utc).isoformat(),
-                            "claude":bool(ANTHROPIC_API_KEY),"gemini":bool(GEMINI_API_KEY)})
+                            "claude":bool(ANTHROPIC_API_KEY),
+                            "gemini":bool(GEMINI_API_KEY),
+                            "groq":bool(GROQ_API_KEY)})
         elif path=="/api/search":
             q=urllib.parse.parse_qs(parsed.query).get("q",[""])[0].strip()
             if not q: self.send_json({"error":"missing q"},code=400); return
             self.send_json({"items":search_deals(q),"query":q})
         elif path=="/api/test-keys":
-            # Show discovered Gemini models + smoke-test both APIs
             discovered = list_gemini_models()
-            c_text, c_err = call_claude("Reply with exactly: {\"ok\":true}")
-            g_text, g_err = call_gemini("Reply with exactly: {\"ok\":true}")
+            c_text, c_err = call_claude('Reply with exactly: {"ok":true}')
+            g_text, g_err = call_gemini('Reply with exactly: {"ok":true}')
+            r_text, r_err = call_groq('Reply with exactly: {"ok":true}')
             self.send_json({
-                "claude_key_set":    bool(ANTHROPIC_API_KEY),
-                "gemini_key_set":    bool(GEMINI_API_KEY),
+                "claude_key_set":      bool(ANTHROPIC_API_KEY),
+                "gemini_key_set":      bool(GEMINI_API_KEY),
+                "groq_key_set":        bool(GROQ_API_KEY),
                 "gemini_models_found": [f"{v}/{m}" for v,m in discovered[:8]],
-                "claude_ok":  bool(c_text),
-                "claude_err": c_err,
-                "gemini_ok":  bool(g_text),
-                "gemini_err": g_err,
+                "claude_ok":  bool(c_text), "claude_err":  c_err,
+                "gemini_ok":  bool(g_text), "gemini_err":  g_err,
+                "groq_ok":    bool(r_text), "groq_err":    r_err,
             })
         elif path in ("/","/index.html"):
             self.send_file("index.html","text/html; charset=utf-8")
@@ -624,6 +686,6 @@ class Handler(BaseHTTPRequestHandler):
             self.send_error(404)
 
 if __name__=="__main__":
-    print(f"[DealFlow] http://0.0.0.0:{PORT}  Claude={'on' if ANTHROPIC_API_KEY else 'off'}  Gemini={'on' if GEMINI_API_KEY else 'off'}")
+    print(f"[DealFlow] http://0.0.0.0:{PORT}  Claude={'on' if ANTHROPIC_API_KEY else 'off'}  Gemini={'on' if GEMINI_API_KEY else 'off'}  Groq={'on' if GROQ_API_KEY else 'off'}")
     threading.Thread(target=get_news,daemon=True).start()
     HTTPServer(("0.0.0.0",PORT),Handler).serve_forever()

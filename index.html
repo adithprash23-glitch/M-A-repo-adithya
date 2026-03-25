@@ -811,7 +811,7 @@ async function loadNews(force=false){
     const r=await fetch(force?'/api/news?refresh=1':'/api/news',{signal:AbortSignal.timeout(35000)});
     const d=await r.json();
     items=d.items||[];prevCnt=items.length;
-    if(d.claude||d.gemini)document.getElementById('aipill').classList.add('on');
+    if(d.claude||d.gemini||d.groq)document.getElementById('aipill').classList.add('on');
   }catch(e){console.error(e);items=[];}
   updateStats();updateSrc();updateRP();updateRegionCounts();
   applyFilters();renderHero();
@@ -873,34 +873,50 @@ async function analyzeCard(e,cardEl,item){
 }
 
 function renderAnalysis(panel,data){
-  const c=data.claude||{},g=data.gemini||{};
-  const noKeys=!data.has_claude&&!data.has_gemini;
-  if(noKeys){panel.innerHTML=`<div class="a-no-key">No AI keys configured. Add <strong>ANTHROPIC_API_KEY</strong> and <strong>GEMINI_API_KEY</strong> as environment variables on Render.</div>`;return;}
-  const sentClass={Bullish:'a-sent-bull',Bearish:'a-sent-bear',Neutral:'a-sent-neu'}[c.sentiment]||'a-sent-neu';
+  const c=data.claude||{},g=data.gemini||{},r=data.groq||{};
+  const noKeys=!data.has_claude&&!data.has_gemini&&!data.has_groq;
+  if(noKeys){panel.innerHTML=`<div class="a-no-key">No AI keys configured. Add <strong>ANTHROPIC_API_KEY</strong>, <strong>GEMINI_API_KEY</strong>, or <strong>GROQ_API_KEY</strong> as environment variables on Render.</div>`;return;}
+
+  // Use Groq's strategic_tag/sentiment as fallback when Claude is absent
+  const strategy = (Object.keys(c).length ? c : r);
+  const sentClass={Bullish:'a-sent-bull',Bearish:'a-sent-bear',Neutral:'a-sent-neu'}[strategy.sentiment]||'a-sent-neu';
+
+  const claudePanel = data.has_claude&&(c.rationale||c.drivers) ? `<div class="ai-col">
+    <div class="ai-col-head claude"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg> Claude — Corporate Strategy</div>
+    ${c.rationale?`<div class="ai-section"><div class="ai-section-t">Why this deal</div><div class="ai-body">${c.rationale}</div></div>`:''}
+    ${c.drivers?.length?`<div class="ai-section"><div class="ai-section-t">Key Drivers</div><div class="ai-drivers">${c.drivers.map(d=>`<div class="ai-driver">${d}</div>`).join('')}</div></div>`:''}
+    ${c.industry_signal?`<div class="ai-section"><div class="ai-section-t">Industry Signal</div><div class="ai-body">${c.industry_signal}</div></div>`:''}
+  </div>` : '';
+
+  const groqPanel = data.has_groq&&(r.rationale||r.drivers) ? `<div class="ai-col">
+    <div class="ai-col-head" style="color:#f97316"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg> Groq · LLaMA — Strategy</div>
+    ${r.rationale?`<div class="ai-section"><div class="ai-section-t">Why this deal</div><div class="ai-body">${r.rationale}</div></div>`:''}
+    ${r.drivers?.length?`<div class="ai-section"><div class="ai-section-t">Key Drivers</div><div class="ai-drivers">${r.drivers.map(d=>`<div class="ai-driver">${d}</div>`).join('')}</div></div>`:''}
+    ${r.industry_signal?`<div class="ai-section"><div class="ai-section-t">Industry Signal</div><div class="ai-body">${r.industry_signal}</div></div>`:''}
+  </div>` : '';
+
+  const geminiPanel = data.has_gemini&&(g.macro_context||g.timing_rationale) ? `<div class="ai-col">
+    <div class="ai-col-head gemini"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg> Gemini — Macro Context</div>
+    ${g.macro_context?`<div class="ai-section"><div class="ai-section-t">Macro Forces</div><div class="ai-body">${g.macro_context}</div></div>`:''}
+    ${g.timing_rationale?`<div class="ai-section"><div class="ai-section-t">Why Now</div><div class="ai-body">${g.timing_rationale}</div></div>`:''}
+    ${g.industry_trajectory?`<div class="ai-section"><div class="ai-section-t">Industry Trajectory</div><div class="ai-body">${g.industry_trajectory}</div></div>`:''}
+  </div>` : '';
+
+  const anyResult = claudePanel||groqPanel||geminiPanel;
   panel.innerHTML=`<div class="apanel-content">
     <div class="apanel-top">
       <div style="display:flex;gap:6px;flex-wrap:wrap">
-        ${c.strategic_tag?`<span class="a-stag">◆ ${c.strategic_tag}</span>`:''}
-        ${c.sentiment?`<span class="a-sentiment ${sentClass}">${c.sentiment==='Bullish'?'↑':c.sentiment==='Bearish'?'↓':'→'} ${c.sentiment}: ${c.sentiment_reason||''}</span>`:''}
+        ${strategy.strategic_tag?`<span class="a-stag">◆ ${strategy.strategic_tag}</span>`:''}
+        ${strategy.sentiment?`<span class="a-sentiment ${sentClass}">${strategy.sentiment==='Bullish'?'↑':strategy.sentiment==='Bearish'?'↓':'→'} ${strategy.sentiment}: ${strategy.sentiment_reason||''}</span>`:''}
       </div>
     </div>
-    <div class="ai-cols">
-      ${data.has_claude&&(c.rationale||c.drivers)?`<div class="ai-col">
-        <div class="ai-col-head claude"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg> Claude — Corporate Strategy</div>
-        ${c.rationale?`<div class="ai-section"><div class="ai-section-t">Why this deal</div><div class="ai-body">${c.rationale}</div></div>`:''}
-        ${c.drivers?.length?`<div class="ai-section"><div class="ai-section-t">Key Drivers</div><div class="ai-drivers">${c.drivers.map(d=>`<div class="ai-driver">${d}</div>`).join('')}</div></div>`:''}
-        ${c.industry_signal?`<div class="ai-section"><div class="ai-section-t">Industry Signal</div><div class="ai-body">${c.industry_signal}</div></div>`:''}
-      </div>`:''}
-      ${data.has_gemini&&(g.macro_context||g.timing_rationale)?`<div class="ai-col">
-        <div class="ai-col-head gemini"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg> Gemini — Macro Context</div>
-        ${g.macro_context?`<div class="ai-section"><div class="ai-section-t">Macro Forces</div><div class="ai-body">${g.macro_context}</div></div>`:''}
-        ${g.timing_rationale?`<div class="ai-section"><div class="ai-section-t">Why Now</div><div class="ai-body">${g.timing_rationale}</div></div>`:''}
-        ${g.industry_trajectory?`<div class="ai-section"><div class="ai-section-t">Industry Trajectory</div><div class="ai-body">${g.industry_trajectory}</div></div>`:''}
-      </div>`:''}
-      ${(!data.has_claude||Object.keys(c).length===0)&&(!data.has_gemini||Object.keys(g).length===0)?`<div class="a-no-key" style="grid-column:1/-1">
+    <div class="ai-cols" style="grid-template-columns:repeat(auto-fit,minmax(220px,1fr))">
+      ${claudePanel}${groqPanel}${geminiPanel}
+      ${!anyResult?`<div class="a-no-key" style="grid-column:1/-1">
         <strong>No analysis returned.</strong><br>
-        ${data.claude_err?`<span style="font-size:.68rem;color:var(--red)">Claude error: ${data.claude_err}</span><br>`:''}
-        ${data.gemini_err?`<span style="font-size:.68rem;color:var(--red)">Gemini error: ${data.gemini_err}</span><br>`:''}
+        ${data.claude_err?`<span style="font-size:.68rem;color:var(--red)">Claude: ${data.claude_err}</span><br>`:''}
+        ${data.groq_err?`<span style="font-size:.68rem;color:var(--red)">Groq: ${data.groq_err}</span><br>`:''}
+        ${data.gemini_err?`<span style="font-size:.68rem;color:var(--red)">Gemini: ${data.gemini_err}</span><br>`:''}
         <span style="font-size:.66rem;color:var(--muted)">Check <a href="/api/test-keys" target="_blank">api/test-keys</a> for full diagnostics.</span>
       </div>`:''}
     </div>

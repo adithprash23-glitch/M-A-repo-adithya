@@ -231,23 +231,58 @@ def call_claude(prompt):
             print(f"[Claude] {model} → {last_err}")
     return None, last_err
 
-# (api_version, model_name) — tries stable v1 names first, then v1beta
-GEMINI_CONFIGS = [
-    ("v1beta", "gemini-2.0-flash"),
-    ("v1beta", "gemini-2.0-flash-lite"),
-    ("v1",     "gemini-1.5-flash"),
-    ("v1",     "gemini-1.5-flash-001"),
-    ("v1",     "gemini-1.5-flash-002"),
-    ("v1beta", "gemini-1.5-flash"),
-    ("v1beta", "gemini-1.5-flash-8b"),
-    ("v1",     "gemini-1.0-pro"),
-]
+# Discovered at runtime by list_gemini_models(); cached here
+_gemini_model_cache = []   # list of (api_ver, model_name)
+
+def list_gemini_models():
+    """
+    Call Google's ListModels endpoint to find what models this API key can actually use.
+    Returns a list of (api_ver, model_name) tuples ordered by preference.
+    """
+    if not GEMINI_API_KEY: return []
+    found = []
+    for api_ver in ("v1beta", "v1"):
+        try:
+            url = f"https://generativelanguage.googleapis.com/{api_ver}/models?key={GEMINI_API_KEY}&pageSize=50"
+            req = urllib.request.Request(url, headers={"Accept": "application/json"})
+            resp = urllib.request.urlopen(req, timeout=10, context=SSL_CTX)
+            data = json.loads(resp.read().decode())
+            for m in data.get("models", []):
+                if "generateContent" not in m.get("supportedGenerationMethods", []):
+                    continue
+                name = m["name"].replace("models/", "")
+                # prefer flash/fast models, skip embedding/aqa models
+                if any(x in name for x in ("embed", "aqa", "vision", "retrieval")):
+                    continue
+                found.append((api_ver, name))
+            if found:
+                # sort: prefer v1beta gemini-2.x > gemini-1.5 > others
+                def rank(t):
+                    _, n = t
+                    if "2.0" in n or "2.5" in n: return 0
+                    if "1.5" in n: return 1
+                    return 2
+                found.sort(key=rank)
+                print(f"[Gemini] ListModels found {len(found)} models: {[m for _,m in found[:4]]}")
+                return found
+        except Exception as e:
+            print(f"[Gemini] ListModels ({api_ver}) error: {e}")
+    return []
 
 def call_gemini(prompt):
-    """Try each Gemini model/version combo until one works. Returns (text, error_str)."""
+    """
+    Discover available models via ListModels (cached), then try each until one works.
+    Returns (text, error_str).
+    """
+    global _gemini_model_cache
     if not GEMINI_API_KEY: return None, "GEMINI_API_KEY not set"
+    # Populate cache on first call
+    if not _gemini_model_cache:
+        _gemini_model_cache = list_gemini_models()
+    if not _gemini_model_cache:
+        return None, "No generateContent-capable models found for this API key. Check that the Generative Language API is enabled at console.cloud.google.com and the key is from Google AI Studio (aistudio.google.com)."
     last_err = ""
-    for api_ver, model in GEMINI_CONFIGS:
+    for api_ver, model in _gemini_model_cache[:6]:   # try top 6 models
         try:
             url = f"https://generativelanguage.googleapis.com/{api_ver}/models/{model}:generateContent?key={GEMINI_API_KEY}"
             payload = json.dumps({
@@ -260,7 +295,7 @@ def call_gemini(prompt):
                 resp = urllib.request.urlopen(req, timeout=30, context=SSL_CTX)
             except urllib.error.HTTPError as he:
                 body = he.read().decode()
-                last_err = f"HTTP {he.code} ({api_ver}/{model}): {body[:200]}"
+                last_err = f"HTTP {he.code} ({api_ver}/{model}): {body[:300]}"
                 print(f"[Gemini] {last_err}")
                 continue
             result = json.loads(resp.read().decode())
@@ -552,12 +587,14 @@ class Handler(BaseHTTPRequestHandler):
             if not q: self.send_json({"error":"missing q"},code=400); return
             self.send_json({"items":search_deals(q),"query":q})
         elif path=="/api/test-keys":
-            # Quick smoke-test for both API keys — use minimal prompt
+            # Show discovered Gemini models + smoke-test both APIs
+            discovered = list_gemini_models()
             c_text, c_err = call_claude("Reply with exactly: {\"ok\":true}")
             g_text, g_err = call_gemini("Reply with exactly: {\"ok\":true}")
             self.send_json({
-                "claude_key_set": bool(ANTHROPIC_API_KEY),
-                "gemini_key_set": bool(GEMINI_API_KEY),
+                "claude_key_set":    bool(ANTHROPIC_API_KEY),
+                "gemini_key_set":    bool(GEMINI_API_KEY),
+                "gemini_models_found": [f"{v}/{m}" for v,m in discovered[:8]],
                 "claude_ok":  bool(c_text),
                 "claude_err": c_err,
                 "gemini_ok":  bool(g_text),

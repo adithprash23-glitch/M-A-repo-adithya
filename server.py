@@ -231,19 +231,25 @@ def call_claude(prompt):
             print(f"[Claude] {model} → {last_err}")
     return None, last_err
 
-GEMINI_MODELS = [
-    "gemini-2.0-flash",
-    "gemini-1.5-flash",
-    "gemini-1.5-flash-latest",
+# (api_version, model_name) — tries stable v1 names first, then v1beta
+GEMINI_CONFIGS = [
+    ("v1beta", "gemini-2.0-flash"),
+    ("v1beta", "gemini-2.0-flash-lite"),
+    ("v1",     "gemini-1.5-flash"),
+    ("v1",     "gemini-1.5-flash-001"),
+    ("v1",     "gemini-1.5-flash-002"),
+    ("v1beta", "gemini-1.5-flash"),
+    ("v1beta", "gemini-1.5-flash-8b"),
+    ("v1",     "gemini-1.0-pro"),
 ]
 
 def call_gemini(prompt):
-    """Try each Gemini model until one works. Returns (text, error_str)."""
+    """Try each Gemini model/version combo until one works. Returns (text, error_str)."""
     if not GEMINI_API_KEY: return None, "GEMINI_API_KEY not set"
     last_err = ""
-    for model in GEMINI_MODELS:
+    for api_ver, model in GEMINI_CONFIGS:
         try:
-            url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={GEMINI_API_KEY}"
+            url = f"https://generativelanguage.googleapis.com/{api_ver}/models/{model}:generateContent?key={GEMINI_API_KEY}"
             payload = json.dumps({
                 "contents": [{"parts": [{"text": prompt}]}],
                 "generationConfig": {"temperature": 0.7, "maxOutputTokens": 700}
@@ -254,16 +260,16 @@ def call_gemini(prompt):
                 resp = urllib.request.urlopen(req, timeout=30, context=SSL_CTX)
             except urllib.error.HTTPError as he:
                 body = he.read().decode()
-                last_err = f"HTTP {he.code} ({model}): {body[:200]}"
+                last_err = f"HTTP {he.code} ({api_ver}/{model}): {body[:200]}"
                 print(f"[Gemini] {last_err}")
                 continue
             result = json.loads(resp.read().decode())
             text = result['candidates'][0]['content']['parts'][0]['text'].strip()
-            print(f"[Gemini] OK with model={model}")
+            print(f"[Gemini] OK with {api_ver}/{model}")
             return text, None
         except Exception as e:
-            last_err = f"{type(e).__name__}: {e}"
-            print(f"[Gemini] {model} → {last_err}")
+            last_err = f"{type(e).__name__} ({api_ver}/{model}): {e}"
+            print(f"[Gemini] {last_err}")
     return None, last_err
 
 def parse_json_from_text(text):

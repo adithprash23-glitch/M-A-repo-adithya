@@ -280,10 +280,20 @@ def call_gemini(prompt):
     # Populate cache on first call
     if not _gemini_model_cache:
         _gemini_model_cache = list_gemini_models()
-    if not _gemini_model_cache:
-        return None, "No generateContent-capable models found for this API key. Check that the Generative Language API is enabled at console.cloud.google.com and the key is from Google AI Studio (aistudio.google.com)."
+    # If ListModels discovery failed, fall back to well-known model names
+    GEMINI_FALLBACK = [
+        ("v1beta", "gemini-2.0-flash"),
+        ("v1beta", "gemini-2.0-flash-lite"),
+        ("v1beta", "gemini-1.5-flash"),
+        ("v1beta", "gemini-1.5-flash-8b"),
+        ("v1beta", "gemini-1.5-pro"),
+        ("v1",     "gemini-1.5-flash"),
+        ("v1",     "gemini-1.5-pro"),
+        ("v1beta", "gemini-pro"),
+    ]
+    models_to_try = _gemini_model_cache[:6] if _gemini_model_cache else GEMINI_FALLBACK
     last_err = ""
-    for api_ver, model in _gemini_model_cache[:6]:   # try top 6 models
+    for api_ver, model in models_to_try:
         try:
             url = f"https://generativelanguage.googleapis.com/{api_ver}/models/{model}:generateContent?key={GEMINI_API_KEY}"
             payload = json.dumps({
@@ -330,8 +340,13 @@ def call_groq(prompt):
             req = urllib.request.Request(
                 "https://api.groq.com/openai/v1/chat/completions",
                 data=payload,
-                headers={"Authorization": f"Bearer {GROQ_API_KEY}",
-                         "Content-Type": "application/json"})
+                headers={
+                    "Authorization": f"Bearer {GROQ_API_KEY}",
+                    "Content-Type": "application/json",
+                    "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                    "Accept": "application/json",
+                    "Accept-Language": "en-US,en;q=0.9",
+                })
             try:
                 resp = urllib.request.urlopen(req, timeout=30, context=SSL_CTX)
             except urllib.error.HTTPError as he:

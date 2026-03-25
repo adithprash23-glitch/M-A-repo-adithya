@@ -897,7 +897,12 @@ function renderAnalysis(panel,data){
         ${g.timing_rationale?`<div class="ai-section"><div class="ai-section-t">Why Now</div><div class="ai-body">${g.timing_rationale}</div></div>`:''}
         ${g.industry_trajectory?`<div class="ai-section"><div class="ai-section-t">Industry Trajectory</div><div class="ai-body">${g.industry_trajectory}</div></div>`:''}
       </div>`:''}
-      ${(!data.has_claude||Object.keys(c).length===0)&&(!data.has_gemini||Object.keys(g).length===0)?`<div class="a-no-key" style="grid-column:1/-1">No analysis returned.</div>`:''}
+      ${(!data.has_claude||Object.keys(c).length===0)&&(!data.has_gemini||Object.keys(g).length===0)?`<div class="a-no-key" style="grid-column:1/-1">
+        <strong>No analysis returned.</strong><br>
+        ${data.claude_err?`<span style="font-size:.68rem;color:var(--red)">Claude error: ${data.claude_err}</span><br>`:''}
+        ${data.gemini_err?`<span style="font-size:.68rem;color:var(--red)">Gemini error: ${data.gemini_err}</span><br>`:''}
+        <span style="font-size:.66rem;color:var(--muted)">Check <a href="/api/test-keys" target="_blank">api/test-keys</a> for full diagnostics.</span>
+      </div>`:''}
     </div>
   </div>`;
 }

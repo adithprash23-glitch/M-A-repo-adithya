@@ -193,40 +193,78 @@ SSL_CTX.verify_mode = ssl.CERT_NONE
 
 # ── AI helpers ────────────────────────────────────────────────────────────────
 
+CLAUDE_MODELS = [
+    "claude-sonnet-4-5",
+    "claude-3-5-sonnet-20241022",
+    "claude-3-5-haiku-20241022",
+]
+
 def call_claude(prompt):
-    if not ANTHROPIC_API_KEY: return None
-    try:
-        payload = json.dumps({
-            "model": "claude-sonnet-4-5",
-            "max_tokens": 700,
-            "messages": [{"role": "user", "content": prompt}]
-        }).encode()
-        req = urllib.request.Request(
-            "https://api.anthropic.com/v1/messages", data=payload,
-            headers={"x-api-key": ANTHROPIC_API_KEY,
-                     "anthropic-version": "2023-06-01",
-                     "content-type": "application/json"})
-        resp = urllib.request.urlopen(req, timeout=30, context=SSL_CTX)
-        result = json.loads(resp.read().decode())
-        return result['content'][0]['text'].strip()
-    except Exception as e:
-        print(f"[Claude] {e}"); return None
+    """Try each model in CLAUDE_MODELS until one works. Returns (text, error_str)."""
+    if not ANTHROPIC_API_KEY: return None, "ANTHROPIC_API_KEY not set"
+    last_err = ""
+    for model in CLAUDE_MODELS:
+        try:
+            payload = json.dumps({
+                "model": model,
+                "max_tokens": 700,
+                "messages": [{"role": "user", "content": prompt}]
+            }).encode()
+            req = urllib.request.Request(
+                "https://api.anthropic.com/v1/messages", data=payload,
+                headers={"x-api-key": ANTHROPIC_API_KEY,
+                         "anthropic-version": "2023-06-01",
+                         "content-type": "application/json"})
+            try:
+                resp = urllib.request.urlopen(req, timeout=30, context=SSL_CTX)
+            except urllib.error.HTTPError as he:
+                body = he.read().decode()
+                last_err = f"HTTP {he.code} ({model}): {body[:200]}"
+                print(f"[Claude] {last_err}")
+                continue
+            result = json.loads(resp.read().decode())
+            text = result['content'][0]['text'].strip()
+            print(f"[Claude] OK with model={model}")
+            return text, None
+        except Exception as e:
+            last_err = f"{type(e).__name__}: {e}"
+            print(f"[Claude] {model} → {last_err}")
+    return None, last_err
+
+GEMINI_MODELS = [
+    "gemini-2.0-flash",
+    "gemini-1.5-flash",
+    "gemini-1.5-flash-latest",
+]
 
 def call_gemini(prompt):
-    if not GEMINI_API_KEY: return None
-    try:
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={GEMINI_API_KEY}"
-        payload = json.dumps({
-            "contents": [{"parts": [{"text": prompt}]}],
-            "generationConfig": {"temperature": 0.7, "maxOutputTokens": 700}
-        }).encode()
-        req = urllib.request.Request(url, data=payload,
-                                     headers={"Content-Type": "application/json"})
-        resp = urllib.request.urlopen(req, timeout=30, context=SSL_CTX)
-        result = json.loads(resp.read().decode())
-        return result['candidates'][0]['content']['parts'][0]['text'].strip()
-    except Exception as e:
-        print(f"[Gemini] {e}"); return None
+    """Try each Gemini model until one works. Returns (text, error_str)."""
+    if not GEMINI_API_KEY: return None, "GEMINI_API_KEY not set"
+    last_err = ""
+    for model in GEMINI_MODELS:
+        try:
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={GEMINI_API_KEY}"
+            payload = json.dumps({
+                "contents": [{"parts": [{"text": prompt}]}],
+                "generationConfig": {"temperature": 0.7, "maxOutputTokens": 700}
+            }).encode()
+            req = urllib.request.Request(url, data=payload,
+                                         headers={"Content-Type": "application/json"})
+            try:
+                resp = urllib.request.urlopen(req, timeout=30, context=SSL_CTX)
+            except urllib.error.HTTPError as he:
+                body = he.read().decode()
+                last_err = f"HTTP {he.code} ({model}): {body[:200]}"
+                print(f"[Gemini] {last_err}")
+                continue
+            result = json.loads(resp.read().decode())
+            text = result['candidates'][0]['content']['parts'][0]['text'].strip()
+            print(f"[Gemini] OK with model={model}")
+            return text, None
+        except Exception as e:
+            last_err = f"{type(e).__name__}: {e}"
+            print(f"[Gemini] {model} → {last_err}")
+    return None, last_err
 
 def parse_json_from_text(text):
     """Extract JSON from AI response (handles markdown code blocks)."""
@@ -290,15 +328,17 @@ Return ONLY valid JSON (no markdown, no extra text):
 }}"""
 
     # Run both in parallel
-    results = {"claude": None, "gemini": None}
+    results = {"claude": None, "gemini": None, "claude_err": None, "gemini_err": None}
 
     def run_claude():
-        raw = call_claude(claude_prompt)
+        raw, err = call_claude(claude_prompt)
         results["claude"] = parse_json_from_text(raw) if raw else {}
+        results["claude_err"] = err
 
     def run_gemini():
-        raw = call_gemini(gemini_prompt)
+        raw, err = call_gemini(gemini_prompt)
         results["gemini"] = parse_json_from_text(raw) if raw else {}
+        results["gemini_err"] = err
 
     t1 = threading.Thread(target=run_claude)
     t2 = threading.Thread(target=run_gemini)
@@ -306,10 +346,12 @@ Return ONLY valid JSON (no markdown, no extra text):
     t1.join(timeout=35); t2.join(timeout=35)
 
     return {
-        "claude":  results["claude"]  or {},
-        "gemini":  results["gemini"]  or {},
+        "claude":      results["claude"]     or {},
+        "gemini":      results["gemini"]     or {},
         "has_claude":  bool(ANTHROPIC_API_KEY),
         "has_gemini":  bool(GEMINI_API_KEY),
+        "claude_err":  results["claude_err"],
+        "gemini_err":  results["gemini_err"],
     }
 
 # ── Claude quality filter ─────────────────────────────────────────────────────
@@ -329,7 +371,8 @@ def claude_filter(items):
             "Respond with ONLY a JSON array of integers, e.g. [1, 3, 5]."
         )
         try:
-            raw = call_claude(prompt)
+            raw, err = call_claude(prompt)
+            if err: print(f"[Claude filter] {err}")
             m = re.search(r'\[[\d,\s]*\]', raw or '')
             if m:
                 indices = json.loads(m.group(0))
@@ -502,6 +545,18 @@ class Handler(BaseHTTPRequestHandler):
             q=urllib.parse.parse_qs(parsed.query).get("q",[""])[0].strip()
             if not q: self.send_json({"error":"missing q"},code=400); return
             self.send_json({"items":search_deals(q),"query":q})
+        elif path=="/api/test-keys":
+            # Quick smoke-test for both API keys — use minimal prompt
+            c_text, c_err = call_claude("Reply with exactly: {\"ok\":true}")
+            g_text, g_err = call_gemini("Reply with exactly: {\"ok\":true}")
+            self.send_json({
+                "claude_key_set": bool(ANTHROPIC_API_KEY),
+                "gemini_key_set": bool(GEMINI_API_KEY),
+                "claude_ok":  bool(c_text),
+                "claude_err": c_err,
+                "gemini_ok":  bool(g_text),
+                "gemini_err": g_err,
+            })
         elif path in ("/","/index.html"):
             self.send_file("index.html","text/html; charset=utf-8")
         else:

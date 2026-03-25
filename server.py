@@ -53,6 +53,21 @@ FEEDS = [
      "url": "https://news.google.com/rss/search?q=site:bloomberg.com+acquisition+OR+merger+OR+buyout&hl=en-US&gl=US&ceid=US:en"},
     {"name": "FT Deals",          "short": "FT",
      "url": "https://news.google.com/rss/search?q=site:ft.com+acquisition+OR+merger+OR+takeover&hl=en-US&gl=US&ceid=US:en"},
+    # ── India-specific feeds ──────────────────────────────────────────────────
+    {"name": "ET M&A",            "short": "ET",
+     "url": "https://economictimes.indiatimes.com/markets/mergers-acquisitions/rss.cms"},
+    {"name": "ET Markets",        "short": "ET",
+     "url": "https://economictimes.indiatimes.com/markets/rss.cms"},
+    {"name": "Livemint Companies","short": "Livemint",
+     "url": "https://www.livemint.com/rss/companies"},
+    {"name": "Business Standard M&A","short": "Biz Standard",
+     "url": "https://www.business-standard.com/rss/mergers-acquisitions-104.rss"},
+    {"name": "VCCircle Deals",    "short": "VCCircle",
+     "url": "https://news.google.com/rss/search?q=site:vccircle.com+acquisition+OR+merger+OR+funding&hl=en-IN&gl=IN&ceid=IN:en"},
+    {"name": "Google News India M&A","short": "Google News",
+     "url": "https://news.google.com/rss/search?q=%22acquisition%22+OR+%22merger%22+India&hl=en-IN&gl=IN&ceid=IN:en"},
+    {"name": "Google News India Deals","short": "Google News",
+     "url": "https://news.google.com/rss/search?q=India+%22acquires%22+OR+%22buyout%22+%22crore%22+OR+%22billion%22&hl=en-IN&gl=IN&ceid=IN:en"},
 ]
 
 # ── Noise filter ──────────────────────────────────────────────────────────────
@@ -92,6 +107,83 @@ SECTOR_KEYWORDS = {
     'media':      ['media','entertain','streaming','content','broadcast','studio','publish','music','gaming','news','film'],
     'retail':     ['retail','brand','consumer','food','beverage','restaurant','ecommerce','shop','grocery','fashion','luxury'],
 }
+
+# ── Region detection ──────────────────────────────────────────────────────────
+
+INDIA_TERMS = [
+    'india', 'indian', 'mumbai', 'delhi', 'bengaluru', 'bangalore', 'hyderabad',
+    'chennai', 'kolkata', 'pune', 'ahmedabad', 'sebi', 'rbi', 'nse', 'bse',
+    'sensex', 'nifty', 'reliance', 'tata ', 'infosys', 'wipro', 'mahindra',
+    'adani', 'bajaj', 'hdfc', 'icici', 'sbi ', 'airtel', 'flipkart', 'zomato',
+    'paytm', 'rupee', 'crore', 'lakh', 'swiggy', 'byju', 'zerodha', 'vedanta',
+    'ambani', 'birla', 'hinduja', 'tcs', 'ola ', 'meesho', 'dmart', 'jio',
+    'razorpay', 'phonepe', 'cred', 'nykaa', 'policybazaar', 'groww',
+]
+US_TERMS = [
+    ' u.s.', 'united states', 'wall street', 'nasdaq', 'nyse', 'silicon valley',
+    ' sec ', ' ftc ', ' doj ', 'federal reserve', 'new york city', 'san francisco',
+    'washington dc', 'us-based', 'american company',
+]
+EUROPE_TERMS = [
+    'european', ' eu ', 'london', 'paris', 'berlin', 'frankfurt', 'zurich',
+    'amsterdam', 'madrid', 'milan', 'ftse', ' dax', 'cac 40', ' ecb ',
+    'british', 'french', 'german', 'dutch', 'swiss', 'italian', 'spanish',
+    'uk-based', 'europe-based',
+]
+ASIA_TERMS = [
+    'china', 'chinese', 'japan', 'japanese', 'south korea', 'korean',
+    'singapore', 'hong kong', 'taiwan', 'indonesia', 'thailand', 'vietnam',
+    'alibaba', 'tencent', 'softbank', 'samsung', 'baidu', 'bytedance',
+    'southeast asia', 'asean',
+]
+
+SOURCE_SCORES = {
+    'bloomberg': 40, 'ft': 38, 'wsj': 36, 'reuters': 35,
+    'nyt': 28, 'cnbc': 25, 'bbc': 22, 'techcrunch': 20,
+    'et': 22, 'livemint': 20, 'biz standard': 18, 'moneycontrol': 16,
+    'vccircle': 15,
+}
+
+def detect_region(text):
+    t = text.lower()
+    if any(k in t for k in INDIA_TERMS):  return 'india'
+    if any(k in t for k in ASIA_TERMS):   return 'asia'
+    if any(k in t for k in EUROPE_TERMS): return 'europe'
+    if any(k in t for k in US_TERMS):     return 'us'
+    return 'world'
+
+def valNum_py(v):
+    """Convert deal value string to float for comparison."""
+    if not v: return 0
+    m = re.search(r'([\d,.]+)\s*(trillion|billion|bn|million|mn)', v or '', re.I)
+    if not m: return 0
+    n = float(m.group(1).replace(',', ''))
+    u = m.group(2).lower()
+    return n*1e12 if u.startswith('t') else n*1e9 if u.startswith('b') else n*1e6
+
+def compute_engagement(item):
+    """Score 0-200 estimating how much buzz/attention a deal generates."""
+    score = 10
+    if item.get('maRelated'): score += 20
+    v = valNum_py(item.get('dealValue'))
+    if   v >= 1e12: score += 80
+    elif v >= 1e10: score += 60
+    elif v >= 1e9:  score += 40
+    elif v >= 1e8:  score += 20
+    elif v > 0:     score += 10
+    src = item.get('source', '').lower()
+    for k, s in SOURCE_SCORES.items():
+        if k in src: score += s; break
+    else: score += 8
+    try:
+        pub = item['pubDate'].replace('Z', '+00:00')
+        age = (datetime.now(timezone.utc) - datetime.fromisoformat(pub)).total_seconds()
+        if   age < 7200:  score += 25
+        elif age < 21600: score += 15
+        elif age < 86400: score += 5
+    except: pass
+    score += {'closed': 15, 'announced': 10, 'blocked': 8, 'rumor': 3}.get(item.get('status', ''), 0)
+    return min(score, 200)
 
 # ── SSL ───────────────────────────────────────────────────────────────────────
 
@@ -307,10 +399,11 @@ def parse_rss(xml_text, feed_meta):
         m = re.search(r'\$[\d,.]+\s*(billion|million|trillion|bn|mn)\b',text,re.I)
         deal_value = m.group(0).strip() if m else None
         ma_related = any(kw in text for kw in MA_KEYWORDS)
+        region = detect_region(f"{title} {desc} {link}")
         items.append({"id": link or title, "title": title, "description": desc,
                       "link": link, "pubDate": pub_iso, "source": feed_meta["short"],
                       "sourceFull": feed_meta["name"], "sector": sector, "status": status,
-                      "dealValue": deal_value, "maRelated": ma_related})
+                      "dealValue": deal_value, "maRelated": ma_related, "region": region})
     return items
 
 def fetch_feed(feed):
@@ -337,6 +430,8 @@ def load_all_feeds():
     deduped.sort(key=lambda x:x["pubDate"],reverse=True)
     deduped = claude_filter(deduped)
     deduped.sort(key=lambda x:x["pubDate"],reverse=True)
+    for item in deduped:
+        item["engagementScore"] = compute_engagement(item)
     return deduped
 
 def get_news(force=False):

@@ -1,10 +1,12 @@
 services:
   - type: web
-    name: dealflow-ma-tracker
+    name: mergeon-financial
     runtime: python
-    buildCommand: echo "no build needed"
-    startCommand: python3 server.py
+    buildCommand: pip install -r requirements.txt
+    startCommand: python3 stock_server.py
     envVars:
       - key: PORT
         value: 10000
+      - key: ANTHROPIC_API_KEY
+        sync: false
     plan: free

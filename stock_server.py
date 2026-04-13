@@ -461,31 +461,30 @@ def _periodic_price_refresh():
 
 # ─── AI Analysis ───────────────────────────────────────────────────────────────
 
-def analyze_top_picks(stocks):
-    api_key = os.environ.get("ANTHROPIC_API_KEY", "")
-    if not api_key:
-        return {"error": "Set ANTHROPIC_API_KEY to enable AI analysis."}
-
+def _build_picks_payload(stocks):
     picks = []
     for s in sorted(stocks, key=lambda x: x["combined_score"], reverse=True)[:10]:
         picks.append({
-            "ticker":            s["ticker"],
-            "name":              s["name"],
-            "industry":          s["industry"],
-            "region":            s["region"],
-            "change_pct":        s["change_pct"],
-            "combined_score":    s["combined_score"],
-            "technical_score":   s["technical_score"],
-            "fundamental_score": s["fundamental_score"],
-            "rsi":               s["tech_details"].get("rsi"),
-            "five_day_return":   s["tech_details"].get("five_day_return"),
-            "pe_ratio":          s["fund_details"].get("pe_ratio"),
+            "ticker":             s["ticker"],
+            "name":               s["name"],
+            "industry":           s["industry"],
+            "region":             s["region"],
+            "change_pct":         s["change_pct"],
+            "combined_score":     s["combined_score"],
+            "technical_score":    s["technical_score"],
+            "fundamental_score":  s["fundamental_score"],
+            "rsi":                s["tech_details"].get("rsi"),
+            "five_day_return":    s["tech_details"].get("five_day_return"),
+            "pe_ratio":           s["fund_details"].get("pe_ratio"),
             "revenue_growth_pct": s["fund_details"].get("revenue_growth_pct"),
-            "profit_margin_pct": s["fund_details"].get("profit_margin_pct"),
-            "signal":            s["signal"],
+            "profit_margin_pct":  s["fund_details"].get("profit_margin_pct"),
+            "signal":             s["signal"],
         })
+    return picks
 
-    prompt = f"""You are a senior equity research analyst. Our quantitative screening model flagged these stocks today based on combined technical + fundamental signals:
+
+def _build_prompt(picks):
+    return f"""You are a senior equity research analyst. Our quantitative screening model flagged these stocks today based on combined technical + fundamental signals:
 
 {json.dumps(picks, indent=2)}
 
@@ -494,7 +493,7 @@ For each stock give:
 2. key_risk — the single biggest risk to this thesis
 3. conviction — HIGH, MEDIUM, or LOW (be honest; not everything is HIGH)
 
-Then write 2–3 sentences of macro_themes identifying any patterns across these picks (sectors, geographies, market regimes).
+Then write 2-3 sentences of macro_themes identifying patterns across these picks (sectors, geographies, market regimes).
 
 Respond ONLY with valid JSON — no markdown, no extra text:
 {{
@@ -504,32 +503,92 @@ Respond ONLY with valid JSON — no markdown, no extra text:
   "macro_themes": "..."
 }}"""
 
-    try:
-        body = json.dumps({
-            "model":      "claude-3-5-haiku-20241022",
-            "max_tokens": 1800,
-            "messages":   [{"role": "user", "content": prompt}]
-        }).encode("utf-8")
 
-        req = urllib.request.Request(
-            "https://api.anthropic.com/v1/messages",
-            data=body,
-            headers={
-                "Content-Type":      "application/json",
-                "x-api-key":         api_key,
-                "anthropic-version": "2023-06-01",
-            }
-        )
-        with urllib.request.urlopen(req, timeout=35) as resp:
-            result  = json.loads(resp.read().decode())
-            content = result["content"][0]["text"].strip()
-            start   = content.find("{")
-            end     = content.rfind("}") + 1
-            if start >= 0 and end > start:
-                return json.loads(content[start:end])
-            return {"error": "Could not parse AI response."}
-    except Exception as e:
-        return {"error": str(e)}
+def _parse_json_response(text):
+    text = text.strip()
+    start = text.find("{")
+    end   = text.rfind("}") + 1
+    if start >= 0 and end > start:
+        return json.loads(text[start:end])
+    raise ValueError("No JSON found in response")
+
+
+def _analyze_with_groq(prompt):
+    api_key = os.environ.get("GROQ_API_KEY", "")
+    if not api_key:
+        raise ValueError("No GROQ_API_KEY set")
+
+    body = json.dumps({
+        "model":       "llama-3.3-70b-versatile",
+        "max_tokens":  1800,
+        "messages":    [{"role": "user", "content": prompt}],
+        "temperature": 0.3,
+    }).encode("utf-8")
+
+    req = urllib.request.Request(
+        "https://api.groq.com/openai/v1/chat/completions",
+        data=body,
+        headers={
+            "Content-Type":  "application/json",
+            "Authorization": f"Bearer {api_key}",
+        }
+    )
+    with urllib.request.urlopen(req, timeout=35) as resp:
+        result = json.loads(resp.read().decode())
+        return result["choices"][0]["message"]["content"]
+
+
+def _analyze_with_gemini(prompt):
+    api_key = os.environ.get("GEMINI_API_KEY", "")
+    if not api_key:
+        raise ValueError("No GEMINI_API_KEY set")
+
+    body = json.dumps({
+        "contents": [{"parts": [{"text": prompt}]}],
+        "generationConfig": {"temperature": 0.3, "maxOutputTokens": 1800},
+    }).encode("utf-8")
+
+    req = urllib.request.Request(
+        f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={api_key}",
+        data=body,
+        headers={"Content-Type": "application/json"}
+    )
+    with urllib.request.urlopen(req, timeout=35) as resp:
+        result = json.loads(resp.read().decode())
+        return result["candidates"][0]["content"]["parts"][0]["text"]
+
+
+def analyze_top_picks(stocks):
+    """Try Groq first, fall back to Gemini."""
+    if not stocks:
+        return {"error": "No stock data loaded yet."}
+
+    picks  = _build_picks_payload(stocks)
+    prompt = _build_prompt(picks)
+
+    # 1. Try Groq
+    groq_key   = os.environ.get("GROQ_API_KEY", "")
+    gemini_key = os.environ.get("GEMINI_API_KEY", "")
+
+    if not groq_key and not gemini_key:
+        return {"error": "Set GROQ_API_KEY or GEMINI_API_KEY to enable AI analysis."}
+
+    if groq_key:
+        try:
+            text = _analyze_with_groq(prompt)
+            return _parse_json_response(text)
+        except Exception as e:
+            print(f"Groq failed: {e} — trying Gemini …")
+
+    # 2. Fall back to Gemini
+    if gemini_key:
+        try:
+            text = _analyze_with_gemini(prompt)
+            return _parse_json_response(text)
+        except Exception as e:
+            return {"error": f"Both AI providers failed. Last error: {e}"}
+
+    return {"error": "AI analysis unavailable — check API keys."}
 
 
 # ─── HTTP Handler ──────────────────────────────────────────────────────────────

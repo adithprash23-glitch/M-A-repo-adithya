@@ -3,7 +3,7 @@ services:
     name: mergeon-financial
     runtime: python
     buildCommand: pip install -r requirements.txt
-    startCommand: python3 stock_server.py
+    startCommand: bash start.sh
     envVars:
       - key: PORT
         value: 10000

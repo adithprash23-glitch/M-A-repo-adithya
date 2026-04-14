@@ -558,6 +558,94 @@ def _analyze_with_gemini(prompt):
         return result["candidates"][0]["content"]["parts"][0]["text"]
 
 
+GROQ_MODELS = [
+    "llama-3.3-70b-versatile",
+    "llama3-70b-8192",
+    "mixtral-8x7b-32768",
+]
+
+def _groq_request(messages, system=None, max_tokens=1800):
+    """Try each Groq model until one works."""
+    api_key = os.environ.get("GROQ_API_KEY", "")
+    if not api_key:
+        raise ValueError("No GROQ_API_KEY")
+    msgs = ([{"role":"system","content":system}] if system else []) + messages
+    for model in GROQ_MODELS:
+        try:
+            body = json.dumps({
+                "model": model, "max_tokens": max_tokens,
+                "messages": msgs, "temperature": 0.3,
+            }).encode("utf-8")
+            req = urllib.request.Request(
+                "https://api.groq.com/openai/v1/chat/completions", data=body,
+                headers={"Content-Type":"application/json","Authorization":f"Bearer {api_key}"}
+            )
+            with urllib.request.urlopen(req, timeout=30) as resp:
+                return json.loads(resp.read().decode())["choices"][0]["message"]["content"]
+        except Exception as e:
+            err_str = str(e)
+            if "429" in err_str or "decommissioned" in err_str or "not supported" in err_str:
+                continue
+            raise
+    raise ValueError("All Groq models failed")
+
+
+def _gemini_request(messages, system=None, max_tokens=1800):
+    """Call Gemini generateContent."""
+    api_key = os.environ.get("GEMINI_API_KEY", "")
+    if not api_key:
+        raise ValueError("No GEMINI_API_KEY")
+    parts = []
+    if system:
+        parts.append({"text": system + "\n\n"})
+    for m in messages:
+        parts.append({"text": f"[{m['role'].upper()}]: {m['content']}\n"})
+    body = json.dumps({
+        "contents": [{"parts": parts}],
+        "generationConfig": {"temperature": 0.3, "maxOutputTokens": max_tokens},
+    }).encode("utf-8")
+    req = urllib.request.Request(
+        f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={api_key}",
+        data=body, headers={"Content-Type":"application/json"}
+    )
+    with urllib.request.urlopen(req, timeout=30) as resp:
+        return json.loads(resp.read().decode())["candidates"][0]["content"]["parts"][0]["text"]
+
+
+def ai_request(messages, system=None, max_tokens=1800):
+    """Try Groq first, fall back to Gemini."""
+    groq_key   = os.environ.get("GROQ_API_KEY","")
+    gemini_key = os.environ.get("GEMINI_API_KEY","")
+    if not groq_key and not gemini_key:
+        raise ValueError("Set GROQ_API_KEY or GEMINI_API_KEY")
+    if groq_key:
+        try:
+            return _groq_request(messages, system, max_tokens)
+        except Exception as e:
+            print(f"Groq failed: {e} — trying Gemini")
+    if gemini_key:
+        return _gemini_request(messages, system, max_tokens)
+    raise ValueError("All AI providers failed")
+
+
+def chat_with_ai(message, history, context):
+    """Conversational AI assistant with stock market context."""
+    system = """You are Mergeon AI, a professional financial research assistant built into the Mergeon Financial Intelligence platform. You help users understand market signals, stock data, and financial concepts.
+
+Be concise, professional, and data-driven. Use actual numbers from the context when available. Do not give explicit buy/sell advice — frame insights as observations. Do not reveal which AI model or provider powers you."""
+
+    ctx_str = ""
+    if context:
+        top5 = context.get("top5", [])
+        ctx_str = f"\n\nCurrent market snapshot: {context.get('total',0)} stocks tracked, {context.get('gainers',0)} gainers, {context.get('losers',0)} losers today."
+        if top5:
+            ctx_str += f" Top 5 by score: {', '.join([f\"{s['ticker']}({s['score']}, {s['change']:+.1f}%)\" for s in top5])}."
+
+    messages = list(history or [])
+    messages.append({"role": "user", "content": message + ctx_str})
+    return ai_request(messages, system=system, max_tokens=600)
+
+
 def analyze_top_picks(stocks):
     """Try Groq first, fall back to Gemini."""
     if not stocks:
@@ -573,22 +661,11 @@ def analyze_top_picks(stocks):
     if not groq_key and not gemini_key:
         return {"error": "Set GROQ_API_KEY or GEMINI_API_KEY to enable AI analysis."}
 
-    if groq_key:
-        try:
-            text = _analyze_with_groq(prompt)
-            return _parse_json_response(text)
-        except Exception as e:
-            print(f"Groq failed: {e} — trying Gemini …")
-
-    # 2. Fall back to Gemini
-    if gemini_key:
-        try:
-            text = _analyze_with_gemini(prompt)
-            return _parse_json_response(text)
-        except Exception as e:
-            return {"error": f"Both AI providers failed. Last error: {e}"}
-
-    return {"error": "AI analysis unavailable — check API keys."}
+    try:
+        text = ai_request([{"role":"user","content":prompt}])
+        return _parse_json_response(text)
+    except Exception as e:
+        return {"error": str(e)}
 
 
 # ─── HTTP Handler ──────────────────────────────────────────────────────────────
@@ -685,8 +762,21 @@ class Handler(BaseHTTPRequestHandler):
             if not stocks:
                 self._json({"error": "Stock data not loaded yet — try again in a moment."})
             else:
-                result = analyze_top_picks(stocks)
-                self._json(result)
+                self._json(analyze_top_picks(stocks))
+
+        elif p == "/api/chat":
+            message = body.get("message", "").strip()
+            history = body.get("history", [])
+            context = body.get("context")
+            if not message:
+                self._json({"error": "No message provided."})
+                return
+            try:
+                reply = chat_with_ai(message, history, context)
+                self._json({"reply": reply})
+            except Exception as e:
+                self._json({"reply": f"I'm unable to respond right now: {e}"})
+
         else:
             self.send_error(404)
 

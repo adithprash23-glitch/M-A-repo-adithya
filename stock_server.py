@@ -570,7 +570,8 @@ def _groq_request(messages, system=None, max_tokens=1800):
     if not api_key:
         raise ValueError("No GROQ_API_KEY")
     msgs = ([{"role":"system","content":system}] if system else []) + messages
-    for model in GROQ_MODELS:
+    last_err = None
+    for i, model in enumerate(GROQ_MODELS):
         try:
             body = json.dumps({
                 "model": model, "max_tokens": max_tokens,
@@ -584,10 +585,13 @@ def _groq_request(messages, system=None, max_tokens=1800):
                 return json.loads(resp.read().decode())["choices"][0]["message"]["content"]
         except Exception as e:
             err_str = str(e)
-            if "429" in err_str or "decommissioned" in err_str or "not supported" in err_str:
+            last_err = e
+            if "429" in err_str or "rate" in err_str.lower() or "decommissioned" in err_str or "not supported" in err_str:
+                if i < len(GROQ_MODELS) - 1:
+                    time.sleep(1.5)  # brief pause before next model
                 continue
             raise
-    raise ValueError("All Groq models failed")
+    raise Exception(f"rate_limit: {last_err}")
 
 
 def _gemini_request(messages, system=None, max_tokens=1800):
@@ -618,13 +622,25 @@ def ai_request(messages, system=None, max_tokens=1800):
     gemini_key = os.environ.get("GEMINI_API_KEY","")
     if not groq_key and not gemini_key:
         raise ValueError("Set GROQ_API_KEY or GEMINI_API_KEY")
+    groq_rate_limited = False
     if groq_key:
         try:
             return _groq_request(messages, system, max_tokens)
         except Exception as e:
+            err_str = str(e)
+            if "rate_limit" in err_str or "429" in err_str:
+                groq_rate_limited = True
             print(f"Groq failed: {e} — trying Gemini")
     if gemini_key:
-        return _gemini_request(messages, system, max_tokens)
+        try:
+            return _gemini_request(messages, system, max_tokens)
+        except Exception as e:
+            err_str = str(e)
+            if "429" in err_str or "rate" in err_str.lower():
+                raise Exception("rate_limit")
+            raise
+    if groq_rate_limited:
+        raise Exception("rate_limit")
     raise ValueError("All AI providers failed")
 
 
@@ -666,6 +682,9 @@ def analyze_top_picks(stocks):
         text = ai_request([{"role":"user","content":prompt}])
         return _parse_json_response(text)
     except Exception as e:
+        err_str = str(e)
+        if "rate_limit" in err_str or "429" in err_str:
+            return {"error": "AI rate limit reached. Please wait 30 seconds and try again."}
         return {"error": str(e)}
 
 
@@ -776,7 +795,11 @@ class Handler(BaseHTTPRequestHandler):
                 reply = chat_with_ai(message, history, context)
                 self._json({"reply": reply})
             except Exception as e:
-                self._json({"reply": f"I'm unable to respond right now: {e}"})
+                err_str = str(e)
+                if "rate_limit" in err_str or "429" in err_str:
+                    self._json({"reply": "I'm at capacity right now — too many requests to the AI provider. Please wait 30 seconds and try again."})
+                else:
+                    self._json({"reply": f"I'm unable to respond right now. Please try again in a moment."})
 
         else:
             self.send_error(404)

@@ -639,7 +639,8 @@ Be concise, professional, and data-driven. Use actual numbers from the context w
         top5 = context.get("top5", [])
         ctx_str = f"\n\nCurrent market snapshot: {context.get('total',0)} stocks tracked, {context.get('gainers',0)} gainers, {context.get('losers',0)} losers today."
         if top5:
-            ctx_str += f" Top 5 by score: {', '.join([f\"{s['ticker']}({s['score']}, {s['change']:+.1f}%)\" for s in top5])}."
+            top5_str = ", ".join([f"{s['ticker']}({s['score']}, {s['change']:+.1f}%)" for s in top5])
+            ctx_str += f" Top 5 by score: {top5_str}."
 
     messages = list(history or [])
     messages.append({"role": "user", "content": message + ctx_str})

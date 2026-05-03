@@ -10,9 +10,13 @@ import threading
 import time
 import os
 import math
+import re
+import html as _html
+import xml.etree.ElementTree as ET
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from urllib.parse import urlparse, parse_qs
 from datetime import datetime
+from email.utils import parsedate_to_datetime
 import urllib.request
 import urllib.error
 
@@ -52,6 +56,212 @@ STOCK_UNIVERSE = {
         "Infrastructure": ["ADANIPORTS.NS", "POWERGRID.NS", "NTPC.NS", "BHARTIARTL.NS", "RELIANCE.NS", "ONGC.NS"],
     }
 }
+
+# ─── News Feeds ────────────────────────────────────────────────────────────────
+
+NEWS_TTL = 1200  # 20 minutes
+
+NEWS_FEEDS = {
+    "markets": [
+        ("Reuters Business",  "https://feeds.reuters.com/reuters/businessNews"),
+        ("MarketWatch",       "https://feeds.marketwatch.com/marketwatch/topstories/"),
+        ("CNBC Markets",      "https://www.cnbc.com/id/20910258/device/rss/rss.html"),
+    ],
+    "technology": [
+        ("Reuters Tech",      "https://feeds.reuters.com/reuters/technologyNews"),
+        ("CNBC Tech",         "https://www.cnbc.com/id/19854910/device/rss/rss.html"),
+    ],
+    "energy": [
+        ("Reuters Commodities","https://feeds.reuters.com/reuters/commoditiesNews"),
+        ("CNBC Energy",        "https://www.cnbc.com/id/19836768/device/rss/rss.html"),
+    ],
+    "finance": [
+        ("Reuters Finance",   "https://feeds.reuters.com/reuters/financialservicesNews"),
+        ("CNBC Finance",      "https://www.cnbc.com/id/10000664/device/rss/rss.html"),
+    ],
+    "healthcare": [
+        ("Reuters Health",    "https://feeds.reuters.com/reuters/healthNews"),
+        ("CNBC Health",       "https://www.cnbc.com/id/20910258/device/rss/rss.html"),
+    ],
+    "realestate": [
+        ("CNBC Real Estate",  "https://www.cnbc.com/id/10000115/device/rss/rss.html"),
+        ("Reuters Business",  "https://feeds.reuters.com/reuters/businessNews"),
+    ],
+    "india": [
+        ("Economic Times",    "https://economictimes.indiatimes.com/markets/rssfeeds/1977021501.cms"),
+        ("ET Stocks",         "https://economictimes.indiatimes.com/markets/stocks/rssfeeds/2146842.cms"),
+    ],
+}
+
+_HIGH_IMPACT_KW = {
+    "earnings","profit","revenue","guidance","forecast","merger","acquisition",
+    "ipo","fda","approval","federal reserve","rate hike","rate cut","inflation",
+    "gdp","recession","opec","sanctions","tariff","bankruptcy","dividend",
+    "buyback","quarterly","beat expectations","miss","upgrade","downgrade",
+    "price target","restructuring","layoffs","expansion"
+}
+_SPEC_KW = {"rumor","allegedly","could potentially","speculation","opinion:","commentary:"}
+
+_COMPANY_KW = {
+    "AAPL":          ["apple","iphone","ipad","tim cook","app store"],
+    "MSFT":          ["microsoft","azure","windows","copilot","satya nadella","openai"],
+    "GOOGL":         ["google","alphabet","youtube","android","gemini","waymo"],
+    "NVDA":          ["nvidia","cuda","gpu","jensen huang","blackwell","hopper"],
+    "META":          ["meta","facebook","instagram","whatsapp","zuckerberg","threads"],
+    "AMD":           ["amd","ryzen","radeon","epyc","lisa su"],
+    "ORCL":          ["oracle","larry ellison","oci"],
+    "CRM":           ["salesforce","marc benioff","slack"],
+    "TSLA":          ["tesla","elon musk","cybertruck","supercharger"],
+    "AMZN":          ["amazon","aws","andy jassy","prime","whole foods"],
+    "JPM":           ["jpmorgan","jp morgan","jamie dimon"],
+    "GS":            ["goldman sachs","goldman"],
+    "BAC":           ["bank of america","bofa"],
+    "WFC":           ["wells fargo"],
+    "V":             ["visa"],
+    "MA":            ["mastercard"],
+    "XOM":           ["exxonmobil","exxon"],
+    "CVX":           ["chevron"],
+    "COP":           ["conocophillips"],
+    "JNJ":           ["johnson & johnson","j&j"],
+    "UNH":           ["unitedhealth","united health"],
+    "LLY":           ["eli lilly","mounjaro","zepbound"],
+    "PFE":           ["pfizer"],
+    "ABBV":          ["abbvie","humira"],
+    "TCS.NS":        ["tcs","tata consultancy"],
+    "INFY.NS":       ["infosys"],
+    "WIPRO.NS":      ["wipro"],
+    "HDFCBANK.NS":   ["hdfc bank","hdfc"],
+    "ICICIBANK.NS":  ["icici bank","icici"],
+    "KOTAKBANK.NS":  ["kotak mahindra","kotak bank"],
+    "SBIN.NS":       ["state bank of india","sbi"],
+    "RELIANCE.NS":   ["reliance industries","jio","mukesh ambani"],
+    "MARUTI.NS":     ["maruti","suzuki"],
+    "TATAMOTORS.NS": ["tata motors","jaguar","land rover"],
+    "BHARTIARTL.NS": ["airtel","bharti"],
+}
+
+_news_cache   = {}   # category -> list of articles
+_news_updated = {}   # category -> unix timestamp
+_news_lock    = threading.Lock()
+
+
+def _clean_text(s):
+    s = re.sub(r'<!\[CDATA\[|\]\]>', '', s or '')
+    s = re.sub(r'<[^>]+>', ' ', s)
+    s = re.sub(r'\s+', ' ', s)
+    return _html.unescape(s).strip()
+
+
+def _parse_rss(url, source):
+    try:
+        req = urllib.request.Request(
+            url, headers={"User-Agent": "Mozilla/5.0 (Mergeon/1.0; +https://mergeon.com)"}
+        )
+        with urllib.request.urlopen(req, timeout=12) as resp:
+            content = resp.read()
+        root = ET.fromstring(content)
+        channel = root.find("channel")
+        if channel is None:
+            return []
+        items = []
+        for item in channel.findall("item")[:20]:
+            title = _clean_text(item.findtext("title",""))
+            link  = _clean_text(item.findtext("link",""))
+            desc  = _clean_text(item.findtext("description",""))[:300]
+            pub   = _clean_text(item.findtext("pubDate",""))
+            if title and link:
+                items.append({"title":title,"link":link,"desc":desc,"pub":pub,"source":source})
+        return items
+    except Exception as e:
+        print(f"  RSS {source}: {e}")
+        return []
+
+
+def _pub_ts(pub_str):
+    try:
+        return parsedate_to_datetime(pub_str).timestamp()
+    except Exception:
+        return time.time() - 3600
+
+
+def _score_article(title, desc):
+    text  = (title + " " + desc).lower()
+    score = 30
+    for kws in _COMPANY_KW.values():
+        if any(k in text for k in kws):
+            score += 30
+            break
+    score += min(sum(1 for k in _HIGH_IMPACT_KW if k in text) * 6, 24)
+    if any(c.isdigit() for c in title):
+        score += 5
+    if any(k in text for k in _SPEC_KW):
+        score -= 20
+    return max(0, min(score, 95))
+
+
+def _fetch_news_category(category):
+    feeds = NEWS_FEEDS.get(category, [])
+    raw = []
+    for source, url in feeds:
+        raw.extend(_parse_rss(url, source))
+
+    now       = time.time()
+    seen      = set()
+    scored    = []
+    for item in raw:
+        key = item["title"].lower()[:55]
+        if key in seen:
+            continue
+        seen.add(key)
+        ts    = _pub_ts(item["pub"])
+        age_h = (now - ts) / 3600
+        if age_h > 48:
+            continue
+        score = _score_article(item["title"], item["desc"])
+        if age_h < 1:   score += 10
+        elif age_h < 4: score += 5
+        elif age_h > 16: score -= 5
+        # find related tickers
+        text  = (item["title"] + " " + item["desc"]).lower()
+        tickers = [t for t, kws in _COMPANY_KW.items() if any(k in text for k in kws)]
+        scored.append({**item, "ts": ts, "age_h": round(age_h,1),
+                       "score": min(100, score), "tickers": tickers[:4]})
+
+    out = [a for a in scored if a["score"] >= 45]
+    out.sort(key=lambda x: (-x["score"], x["age_h"]))
+    return out[:30]
+
+
+def fetch_all_news():
+    print(f"[{datetime.now().strftime('%H:%M:%S')}] Refreshing news feeds…")
+    for cat in NEWS_FEEDS:
+        try:
+            arts = _fetch_news_category(cat)
+            with _news_lock:
+                _news_cache[cat]   = arts
+                _news_updated[cat] = time.time()
+            print(f"  news/{cat}: {len(arts)} articles")
+        except Exception as e:
+            print(f"  news/{cat} error: {e}")
+
+
+def get_news(category="markets"):
+    now = time.time()
+    with _news_lock:
+        if now - _news_updated.get(category, 0) < NEWS_TTL:
+            return _news_cache.get(category, [])
+    arts = _fetch_news_category(category)
+    with _news_lock:
+        _news_cache[category]   = arts
+        _news_updated[category] = now
+    return arts
+
+
+def _periodic_news_refresh():
+    while True:
+        time.sleep(NEWS_TTL)
+        fetch_all_news()
+
 
 # ─── Cache ─────────────────────────────────────────────────────────────────────
 
@@ -228,6 +438,45 @@ def calculate_fundamental_score(info):
     }
 
 
+def generate_reason(tech_det, fund_det, combined_score):
+    """1-2 sentence plain-English explanation of why this stock scored as it did."""
+    parts = []
+    rsi      = tech_det.get("rsi", 50)
+    ma_pts   = tech_det.get("ma_pts", 0)
+    macd     = tech_det.get("macd", 0)
+    macd_sig = tech_det.get("macd_signal", 0)
+    ret5     = tech_det.get("five_day_return", 0)
+    pe       = fund_det.get("pe_ratio")
+    rg       = fund_det.get("revenue_growth_pct")
+    margin   = fund_det.get("profit_margin_pct")
+    de       = fund_det.get("debt_equity")
+
+    if ma_pts >= 25:   parts.append("price above SMA20 & SMA50 (strong uptrend)")
+    elif ma_pts >= 17: parts.append("price above SMA20 (short-term uptrend)")
+    elif ma_pts <= 4:  parts.append("trading below key moving averages")
+
+    if rsi < 32:       parts.append(f"RSI {rsi:.0f} — oversold territory")
+    elif rsi > 68:     parts.append(f"RSI {rsi:.0f} — overbought")
+    else:              parts.append(f"RSI {rsi:.0f} (neutral)")
+
+    if macd > macd_sig and macd > 0: parts.append("MACD bullish crossover")
+    elif macd < macd_sig and macd < 0: parts.append("MACD bearish")
+
+    if ret5 > 3:  parts.append(f"+{ret5:.1f}% 5-day momentum")
+    elif ret5 < -3: parts.append(f"{ret5:.1f}% 5-day weakness")
+
+    if pe and pe < 15:  parts.append(f"value-priced at P/E {pe:.0f}")
+    elif pe and pe > 40: parts.append(f"premium valuation P/E {pe:.0f}")
+
+    if rg and rg > 15:  parts.append(f"{rg:.0f}% revenue growth")
+    if margin and margin > 20: parts.append(f"{margin:.0f}% profit margin")
+    if de is not None and de < 0.3: parts.append("low debt")
+
+    if not parts:
+        return "Neutral signals across technical and fundamental factors."
+    return " · ".join(parts[:5]) + "."
+
+
 def generate_signal(tech_details, fund_details):
     """Human-readable summary of the dominant signal"""
     tags = []
@@ -381,6 +630,7 @@ def fetch_all_stocks():
 
             combined = round((tech_score + fund_score) / 2)
             signal   = generate_signal(tech_det, fund_det)
+            reason   = generate_reason(tech_det, fund_det, combined)
 
             name = (fund_det.get("long_name") or
                     fund_info.get("shortName", "") or
@@ -408,6 +658,7 @@ def fetch_all_stocks():
                 "fundamental_score": fund_score,
                 "combined_score":   combined,
                 "signal":           signal,
+                "reason":           reason,
                 "tech_details":     tech_det,
                 "fund_details":     fund_det,
                 "sparkline":        sparkline,
@@ -767,6 +1018,15 @@ class Handler(BaseHTTPRequestHandler):
                 "pandas":        PANDAS_OK,
             })
 
+        elif p == "/api/news":
+            qs  = parse_qs(urlparse(self.path).query)
+            cat = qs.get("category", ["markets"])[0]
+            if cat not in NEWS_FEEDS:
+                cat = "markets"
+            arts = get_news(cat)
+            self._json({"articles": arts, "category": cat,
+                        "categories": list(NEWS_FEEDS.keys())})
+
         else:
             self.send_error(404)
 
@@ -838,6 +1098,10 @@ if __name__ == "__main__":
 
     # 4. Periodic price refresh every 15 min
     threading.Thread(target=_periodic_price_refresh, daemon=True).start()
+
+    # 5. News feeds (background, starts after 15s)
+    threading.Timer(15.0, lambda: threading.Thread(target=fetch_all_news, daemon=True).start()).start()
+    threading.Thread(target=_periodic_news_refresh, daemon=True).start()
 
     server = HTTPServer(("0.0.0.0", PORT), Handler)
     print(f"→ http://localhost:{PORT}\n")

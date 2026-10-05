@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""DealFlow M&A News API + static file server."""
+"""Older M&A news server from before the stock dashboard. Not used by the current app."""
 
 import http.server
 import json
@@ -15,7 +15,7 @@ from datetime import datetime, timezone
 from email.utils import parsedate_to_datetime
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
-# ── Config ────────────────────────────────────────────────────────────────────
+# Config
 
 PORT               = int(os.environ.get('PORT', 8000))
 CACHE_TTL          = 300
@@ -54,7 +54,7 @@ FEEDS = [
      "url": "https://news.google.com/rss/search?q=site:bloomberg.com+acquisition+OR+merger+OR+buyout&hl=en-US&gl=US&ceid=US:en"},
     {"name": "FT Deals",          "short": "FT",
      "url": "https://news.google.com/rss/search?q=site:ft.com+acquisition+OR+merger+OR+takeover&hl=en-US&gl=US&ceid=US:en"},
-    # ── India-specific feeds ──────────────────────────────────────────────────
+    # India-specific feeds
     {"name": "ET M&A",            "short": "ET",
      "url": "https://economictimes.indiatimes.com/markets/mergers-acquisitions/rss.cms"},
     {"name": "ET Markets",        "short": "ET",
@@ -71,7 +71,7 @@ FEEDS = [
      "url": "https://news.google.com/rss/search?q=India+%22acquires%22+OR+%22buyout%22+%22crore%22+OR+%22billion%22&hl=en-IN&gl=IN&ceid=IN:en"},
 ]
 
-# ── Noise filter ──────────────────────────────────────────────────────────────
+# Noise filter
 
 NOISE_DOMAINS = [
     'marketbeat.com', 'benzinga.com', 'prnewswire.com',
@@ -94,7 +94,7 @@ def is_noise(title, link):
     if any(d in link.lower() for d in NOISE_DOMAINS): return True
     return any(re.search(p, title, re.I) for p in NOISE_PATTERNS)
 
-# ── M&A keywords & sectors ────────────────────────────────────────────────────
+# M&A keywords & sectors
 
 MA_KEYWORDS = ['acqui','merger','takeover','buyout','acquisition','to buy','to acquire',
                'combine','merge','divest','spin-off','spinoff','private equity','m&a',
@@ -109,7 +109,7 @@ SECTOR_KEYWORDS = {
     'retail':     ['retail','brand','consumer','food','beverage','restaurant','ecommerce','shop','grocery','fashion','luxury'],
 }
 
-# ── Region detection ──────────────────────────────────────────────────────────
+# Region detection
 
 INDIA_TERMS = [
     'india', 'indian', 'mumbai', 'delhi', 'bengaluru', 'bangalore', 'hyderabad',
@@ -186,13 +186,13 @@ def compute_engagement(item):
     score += {'closed': 15, 'announced': 10, 'blocked': 8, 'rumor': 3}.get(item.get('status', ''), 0)
     return min(score, 200)
 
-# ── SSL ───────────────────────────────────────────────────────────────────────
+# SSL
 
 SSL_CTX = ssl.create_default_context()
 SSL_CTX.check_hostname = False
 SSL_CTX.verify_mode = ssl.CERT_NONE
 
-# ── AI helpers ────────────────────────────────────────────────────────────────
+# AI helpers
 
 CLAUDE_MODELS = [
     "claude-sonnet-4-5",
@@ -229,7 +229,7 @@ def call_claude(prompt):
             return text, None
         except Exception as e:
             last_err = f"{type(e).__name__}: {e}"
-            print(f"[Claude] {model} → {last_err}")
+            print(f"[Claude] {model} -> {last_err}")
     return None, last_err
 
 # Discovered at runtime by list_gemini_models(); cached here
@@ -383,7 +383,7 @@ def analyze_deal(title, description, sector, deal_value):
         f'- {i["title"]}' for i in context_items[:20] if i.get('maRelated')
     ) or "No recent context available."
 
-    # ── Claude prompt: corporate strategy angle ──
+    # Claude prompt: corporate strategy angle
     claude_prompt = f"""You are a Managing Director in M&A Advisory at Goldman Sachs.
 
 DEAL: {title}
@@ -405,7 +405,7 @@ Return ONLY valid JSON (no markdown, no extra text):
   "industry_signal": "<1-2 sentences on what this means for the broader industry>"
 }}"""
 
-    # ── Gemini prompt: macro/geopolitical angle ──
+    # Gemini prompt: macro/geopolitical angle
     gemini_prompt = f"""You are a macro analyst at Bridgewater Associates.
 
 DEAL: {title}
@@ -464,7 +464,7 @@ Return ONLY valid JSON (no markdown, no extra text):
         "groq_err":    results["groq_err"],
     }
 
-# ── Claude quality filter ─────────────────────────────────────────────────────
+# Claude quality filter
 
 def claude_filter(items):
     """Filter articles using Claude, falling back to Groq if Claude unavailable."""
@@ -497,10 +497,10 @@ def claude_filter(items):
                 kept_all.extend(batch)
         except Exception as e:
             print(f"[AI filter] {e}"); kept_all.extend(batch)
-    print(f"[{provider} filter] {len(items)} → {len(kept_all)}")
+    print(f"[{provider} filter] {len(items)} -> {len(kept_all)}")
     return kept_all
 
-# ── RSS helpers ───────────────────────────────────────────────────────────────
+# RSS helpers
 
 NS = {"dc": "http://purl.org/dc/elements/1.1/",
       "content": "http://purl.org/rss/1.0/modules/content/",
@@ -569,7 +569,7 @@ def fetch_feed(feed):
     try: return parse_rss(fetch_url(feed["url"]), feed)
     except Exception as e: print(f"[FEED ERROR] {feed['name']}: {e}"); return []
 
-# ── Cache ─────────────────────────────────────────────────────────────────────
+# Cache
 
 _cache = {"data": None, "ts": 0}
 _lock  = threading.Lock()
@@ -598,10 +598,10 @@ def get_news(force=False):
         now = time.time()
         if not force and _cache["data"] is not None and (now-_cache["ts"])<CACHE_TTL:
             return _cache["data"]
-        print(f"[CACHE] Refreshing ({len(FEEDS)} feeds, Claude={'on' if ANTHROPIC_API_KEY else 'off'}, Gemini={'on' if GEMINI_API_KEY else 'off'})…")
+        print(f"[CACHE] Refreshing ({len(FEEDS)} feeds, Claude={'on' if ANTHROPIC_API_KEY else 'off'}, Gemini={'on' if GEMINI_API_KEY else 'off'})...")
         data = load_all_feeds()
         _cache["data"] = data; _cache["ts"] = now
-        print(f"[CACHE] Done — {len(data)} items")
+        print(f"[CACHE] Done, {len(data)} items")
         return data
 
 def search_deals(query):
@@ -619,7 +619,7 @@ def search_deals(query):
     out.sort(key=lambda x:x["pubDate"],reverse=True)
     return out
 
-# ── HTTP handler ──────────────────────────────────────────────────────────────
+# HTTP handler
 
 class Handler(BaseHTTPRequestHandler):
     def log_message(self,*a): pass

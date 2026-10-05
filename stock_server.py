@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """
-Mergeon Financial Intelligence - Stock Analysis Server
-Tracks 90 US & Indian stocks with technical + fundamental scoring
-and AI-powered top pick analysis via Claude
+Mergeon stock server.
+Tracks 84 US and Indian stocks, scores each one on technicals and fundamentals,
+and uses Groq (Gemini as backup) to write up the top picks and run the chat.
+Run this for local use or on Render. The Vercel version is api/index.py.
 """
 
 import json
@@ -36,7 +37,7 @@ except ImportError:
     print("ERROR: pandas/numpy not installed. Run: pip install yfinance pandas numpy")
 
 
-# ─── Stock Universe ────────────────────────────────────────────────────────────
+# Stock Universe
 
 STOCK_UNIVERSE = {
     "US": {
@@ -57,7 +58,7 @@ STOCK_UNIVERSE = {
     }
 }
 
-# ─── News Feeds ────────────────────────────────────────────────────────────────
+# News Feeds
 
 NEWS_TTL = 1200  # 20 minutes
 
@@ -233,7 +234,7 @@ def _fetch_news_category(category):
 
 
 def fetch_all_news():
-    print(f"[{datetime.now().strftime('%H:%M:%S')}] Refreshing news feeds…")
+    print(f"[{datetime.now().strftime('%H:%M:%S')}] Refreshing news feeds...")
     for cat in NEWS_FEEDS:
         try:
             arts = _fetch_news_category(cat)
@@ -263,7 +264,7 @@ def _periodic_news_refresh():
         fetch_all_news()
 
 
-# ─── Cache ─────────────────────────────────────────────────────────────────────
+# Cache
 
 _cache = {
     "stocks":                None,
@@ -280,7 +281,7 @@ FUND_TTL         = 86400  # 24 hours
 FUND_CACHE_FILE  = os.path.join(os.path.dirname(__file__), "fundamentals_cache.json")
 
 
-# ─── Technical Analysis ────────────────────────────────────────────────────────
+# Technical Analysis
 
 def safe_float(val, default=0.0):
     try:
@@ -377,7 +378,7 @@ def calculate_technical_score(hist):
     }
 
 
-# ─── Fundamental Analysis ──────────────────────────────────────────────────────
+# Fundamental Analysis
 
 def calculate_fundamental_score(info):
     """Returns (score 0-100, details dict)"""
@@ -405,7 +406,7 @@ def calculate_fundamental_score(info):
     elif rev_growth > 0:        rev_pts = 11
     else:                       rev_pts = 4
 
-    # Debt/equity (0-25 pts) — yfinance stores as %, so 50 = D/E of 0.5
+    # Debt/equity (0-25 pts), yfinance stores as %, so 50 = D/E of 0.5
     if   debt_eq is None:   de_pts = 14
     elif debt_eq < 20:      de_pts = 25
     elif debt_eq < 60:      de_pts = 20
@@ -455,8 +456,8 @@ def generate_reason(tech_det, fund_det, combined_score):
     elif ma_pts >= 17: parts.append("price above SMA20 (short-term uptrend)")
     elif ma_pts <= 4:  parts.append("trading below key moving averages")
 
-    if rsi < 32:       parts.append(f"RSI {rsi:.0f} — oversold territory")
-    elif rsi > 68:     parts.append(f"RSI {rsi:.0f} — overbought")
+    if rsi < 32:       parts.append(f"RSI {rsi:.0f}, oversold territory")
+    elif rsi > 68:     parts.append(f"RSI {rsi:.0f}, overbought")
     else:              parts.append(f"RSI {rsi:.0f} (neutral)")
 
     if macd > macd_sig and macd > 0: parts.append("MACD bullish crossover")
@@ -510,7 +511,7 @@ def generate_signal(tech_details, fund_details):
     return " · ".join(tags[:3]) if tags else "Neutral"
 
 
-# ─── Data Fetching ─────────────────────────────────────────────────────────────
+# Data Fetching
 
 def load_fundamentals_from_disk():
     try:
@@ -594,7 +595,7 @@ def fetch_all_stocks():
                 meta[t] = {"region": region, "industry": industry}
 
     n = len(all_tickers)
-    print(f"[{datetime.now().strftime('%H:%M:%S')}] Fetching prices for {n} tickers …")
+    print(f"[{datetime.now().strftime('%H:%M:%S')}] Fetching prices for {n} tickers...")
 
     try:
         raw = yf.download(
@@ -690,15 +691,15 @@ def refresh_stocks():
 def _bg_fundamentals():
     """Background thread: refresh fundamentals for all tickers, then re-score."""
     tickers = [t for r in STOCK_UNIVERSE.values() for ind in r.values() for t in ind]
-    print(f"[{datetime.now().strftime('%H:%M:%S')}] Background fundamentals fetch for {len(tickers)} tickers …")
+    print(f"[{datetime.now().strftime('%H:%M:%S')}] Background fundamentals fetch for {len(tickers)} tickers...")
     for ticker in tickers:
         try:
             fetch_fundamentals_one(ticker)
-            time.sleep(0.35)  # ~3 req/s — polite to Yahoo
+            time.sleep(0.35)  # ~3 req/s, polite to Yahoo
         except Exception:
             pass
     save_fundamentals_to_disk()
-    print(f"[{datetime.now().strftime('%H:%M:%S')}] Fundamentals done. Re-scoring …")
+    print(f"[{datetime.now().strftime('%H:%M:%S')}] Fundamentals done. Re-scoring...")
     refresh_stocks()
 
 
@@ -706,11 +707,11 @@ def _periodic_price_refresh():
     """Background thread: refresh prices every PRICE_TTL seconds."""
     while True:
         time.sleep(PRICE_TTL)
-        print(f"[{datetime.now().strftime('%H:%M:%S')}] Scheduled price refresh …")
+        print(f"[{datetime.now().strftime('%H:%M:%S')}] Scheduled price refresh...")
         refresh_stocks()
 
 
-# ─── AI Analysis ───────────────────────────────────────────────────────────────
+# AI Analysis
 
 def _build_picks_payload(stocks):
     picks = []
@@ -740,13 +741,13 @@ def _build_prompt(picks):
 {json.dumps(picks, indent=2)}
 
 For each stock give:
-1. thesis — one crisp sentence on WHY it scored well today
-2. key_risk — the single biggest risk to this thesis
-3. conviction — HIGH, MEDIUM, or LOW (be honest; not everything is HIGH)
+1. thesis: one crisp sentence on WHY it scored well today
+2. key_risk: the single biggest risk to this thesis
+3. conviction: HIGH, MEDIUM, or LOW (be honest; not everything is HIGH)
 
 Then write 2-3 sentences of macro_themes identifying patterns across these picks (sectors, geographies, market regimes).
 
-Respond ONLY with valid JSON — no markdown, no extra text:
+Respond ONLY with valid JSON, no markdown, no extra text:
 {{
   "picks": [
     {{"ticker": "...", "thesis": "...", "key_risk": "...", "conviction": "HIGH|MEDIUM|LOW"}}
@@ -881,7 +882,7 @@ def ai_request(messages, system=None, max_tokens=1800):
             err_str = str(e)
             if "rate_limit" in err_str or "429" in err_str:
                 groq_rate_limited = True
-            print(f"Groq failed: {e} — trying Gemini")
+            print(f"Groq failed: {e}, trying Gemini")
     if gemini_key:
         try:
             return _gemini_request(messages, system, max_tokens)
@@ -899,7 +900,7 @@ def chat_with_ai(message, history, context):
     """Conversational AI assistant with stock market context."""
     system = """You are Mergeon AI, a professional financial research assistant built into the Mergeon Financial Intelligence platform. You help users understand market signals, stock data, and financial concepts.
 
-Be concise, professional, and data-driven. Use actual numbers from the context when available. Do not give explicit buy/sell advice — frame insights as observations. Do not reveal which AI model or provider powers you."""
+Be concise, professional, and data-driven. Use actual numbers from the context when available. Do not give explicit buy/sell advice, frame insights as observations. Do not reveal which AI model or provider powers you."""
 
     ctx_str = ""
     if context:
@@ -939,7 +940,7 @@ def analyze_top_picks(stocks):
         return {"error": str(e)}
 
 
-# ─── HTTP Handler ──────────────────────────────────────────────────────────────
+# HTTP Handler
 
 class Handler(BaseHTTPRequestHandler):
 
@@ -1040,7 +1041,7 @@ class Handler(BaseHTTPRequestHandler):
             with _cache_lock:
                 stocks = _cache["stocks"] or []
             if not stocks:
-                self._json({"error": "Stock data not loaded yet — try again in a moment."})
+                self._json({"error": "Stock data not loaded yet, try again in a moment."})
             else:
                 self._json(analyze_top_picks(stocks))
 
@@ -1057,7 +1058,7 @@ class Handler(BaseHTTPRequestHandler):
             except Exception as e:
                 err_str = str(e)
                 if "rate_limit" in err_str or "429" in err_str:
-                    self._json({"reply": "I'm at capacity right now — too many requests to the AI provider. Please wait 30 seconds and try again."})
+                    self._json({"reply": "I'm at capacity right now, too many requests to the AI provider. Please wait 30 seconds and try again."})
                 else:
                     self._json({"reply": f"I'm unable to respond right now. Please try again in a moment."})
 
@@ -1070,7 +1071,7 @@ class Handler(BaseHTTPRequestHandler):
             super().log_message(fmt, *args)
 
 
-# ─── Entry Point ───────────────────────────────────────────────────────────────
+# Entry Point
 
 if __name__ == "__main__":
     if not YFINANCE_OK or not PANDAS_OK:
@@ -1079,10 +1080,7 @@ if __name__ == "__main__":
 
     PORT = int(os.environ.get("PORT", 8080))
 
-    print("╔══════════════════════════════════════════════╗")
-    print("║   Mergeon Financial Intelligence             ║")
-    print(f"║   Stock Analysis Server  —  port {PORT}        ║")
-    print("╚══════════════════════════════════════════════╝")
+    print(f"Mergeon stock server, port {PORT}")
 
     total = sum(len(t) for r in STOCK_UNIVERSE.values() for t in r.values())
     print(f"Tracking {total} stocks across US & Indian markets.\n")
@@ -1093,7 +1091,7 @@ if __name__ == "__main__":
     # 2. First price fetch (background, ~30s)
     threading.Thread(target=refresh_stocks, daemon=True).start()
 
-    # 3. Fundamentals refresh (background, ~60s) — starts after prices
+    # 3. Fundamentals refresh (background, ~60s), starts after prices
     threading.Timer(8.0, lambda: threading.Thread(target=_bg_fundamentals, daemon=True).start()).start()
 
     # 4. Periodic price refresh every 15 min
@@ -1104,10 +1102,10 @@ if __name__ == "__main__":
     threading.Thread(target=_periodic_news_refresh, daemon=True).start()
 
     server = HTTPServer(("0.0.0.0", PORT), Handler)
-    print(f"→ http://localhost:{PORT}\n")
+    print(f"-> http://localhost:{PORT}\n")
     try:
         server.serve_forever()
     except KeyboardInterrupt:
-        print("\nSaving fundamentals cache …")
+        print("\nSaving fundamentals cache...")
         save_fundamentals_to_disk()
         print("Bye.")

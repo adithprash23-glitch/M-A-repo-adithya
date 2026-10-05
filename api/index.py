@@ -1,7 +1,7 @@
 """
-Mergeon Financial Intelligence – Vercel Serverless Handler
-All /api/* routes handled here. Uses a curated 40-stock universe
-that batch-downloads in ~6-8 s, safely within Vercel's limit.
+Vercel version of the Mergeon backend. Every /api/* route goes through here.
+It only tracks 48 stocks (stock_server.py tracks 84) so the batch download
+finishes in about 6-8 seconds, which keeps it under Vercel's time limit.
 """
 
 import json, os, math, re, time, threading
@@ -13,7 +13,7 @@ from datetime import datetime
 from email.utils import parsedate_to_datetime
 import urllib.request, urllib.error
 
-# ── Dependencies ────────────────────────────────────────────────────────────────
+# Dependencies
 try:
     import yfinance as yf
     YFINANCE_OK = True
@@ -27,7 +27,7 @@ try:
 except ImportError:
     PANDAS_OK = False
 
-# ── Curated universe (fast-load ~40 stocks, ~6 s batch download) ────────────────
+# Smaller stock list so it loads fast on Vercel
 STOCK_UNIVERSE = {
     "US": {
         "Technology":  ["AAPL", "MSFT", "NVDA", "GOOGL", "META", "AMD", "AMZN"],
@@ -47,10 +47,10 @@ STOCK_UNIVERSE = {
     }
 }
 
-# ── Module-level cache (persists across warm Vercel invocations) ─────────────────
+# Module-level cache (persists across warm Vercel invocations)
 _cache      = {"stocks": None, "ts": 0, "loading": False}
-_fund       = {}          # ticker → info dict
-_fund_ts    = {}          # ticker → unix ts
+_fund       = {}          # ticker -> info dict
+_fund_ts    = {}          # ticker -> unix ts
 _lock       = threading.Lock()
 _news_cache = {}
 _news_ts    = {}
@@ -59,7 +59,7 @@ PRICE_TTL = 900    # 15 min
 FUND_TTL  = 86400  # 24 hr
 NEWS_TTL  = 1200   # 20 min
 
-# ── News feeds ──────────────────────────────────────────────────────────────────
+# News feeds
 NEWS_FEEDS = {
     "markets":    [("Reuters Business",  "https://feeds.reuters.com/reuters/businessNews"),
                    ("MarketWatch",       "https://feeds.marketwatch.com/marketwatch/topstories/"),
@@ -99,7 +99,7 @@ _COMPANY_KW = {
     "BHARTIARTL.NS":["airtel","bharti"],"SUNPHARMA.NS":["sun pharma"],
 }
 
-# ── Helpers ─────────────────────────────────────────────────────────────────────
+# Helpers
 def safe_float(val, default=0.0):
     try:
         f = float(val)
@@ -107,7 +107,7 @@ def safe_float(val, default=0.0):
     except Exception:
         return default
 
-# ── Technical analysis ───────────────────────────────────────────────────────────
+# Technical analysis
 def calc_rsi(closes, period=14):
     if len(closes) < period + 1: return 50.0
     delta = closes.diff()
@@ -217,7 +217,7 @@ def gen_signal(td, fd):
     elif ret5 < -4: tags.append("Selling Pressure")
     return " · ".join(tags[:3]) if tags else "Neutral"
 
-# ── Data fetch ───────────────────────────────────────────────────────────────────
+# Data fetch
 def fetch_stocks():
     if not YFINANCE_OK or not PANDAS_OK:
         return []
@@ -305,7 +305,7 @@ def ensure_stocks():
             _cache["loading"] = False
         return _cache["stocks"] or [], False
 
-# ── News ─────────────────────────────────────────────────────────────────────────
+# News
 def _clean(s):
     s = re.sub(r'<!\[CDATA\[|\]\]>', '', s or '')
     s = re.sub(r'<[^>]+>', ' ', s)
@@ -375,7 +375,7 @@ def get_news(cat="markets"):
     _news_ts[cat]    = now
     return out
 
-# ── AI ───────────────────────────────────────────────────────────────────────────
+# AI
 GROQ_MODELS = ["llama-3.3-70b-versatile","llama3-70b-8192","mixtral-8x7b-32768"]
 
 def _groq(msgs, system=None, max_tokens=1200):
@@ -457,9 +457,9 @@ def analyze_top_picks(stocks):
 {json.dumps(picks, indent=2)}
 
 For each stock give:
-1. thesis — one crisp sentence on WHY it scored well
-2. key_risk — the single biggest risk
-3. conviction — HIGH, MEDIUM, or LOW
+1. thesis: one crisp sentence on WHY it scored well
+2. key_risk: the single biggest risk
+3. conviction: HIGH, MEDIUM, or LOW
 
 Then write 2-3 sentences of macro_themes across these picks.
 
@@ -477,7 +477,7 @@ Respond ONLY with valid JSON, no markdown:
             return {"error":"AI rate limit reached. Please wait 30 seconds and try again."}
         return {"error": str(ex)}
 
-# ── HTTP Handler ─────────────────────────────────────────────────────────────────
+# HTTP Handler
 class handler(BaseHTTPRequestHandler):
     def do_OPTIONS(self):
         self.send_response(200); self._cors(); self.end_headers()
@@ -546,7 +546,7 @@ class handler(BaseHTTPRequestHandler):
             except Exception as e:
                 err = str(e)
                 if "rate_limit" in err or "429" in err:
-                    self._json({"reply":"I'm at capacity — please wait 30 seconds and try again."})
+                    self._json({"reply":"I'm at capacity, please wait 30 seconds and try again."})
                 else:
                     self._json({"reply":"Unable to respond right now. Please try again."})
         else:

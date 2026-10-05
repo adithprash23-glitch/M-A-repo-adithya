@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Mergeon — Financial Intelligence</title>
+<title>Mergeon | Financial Intelligence</title>
 <style>
 :root {
   --bg:           #070c16;
@@ -36,7 +36,7 @@ body { background: var(--bg); color: var(--text); font-family: -apple-system,Bli
 ::-webkit-scrollbar-track { background:var(--bg); }
 ::-webkit-scrollbar-thumb { background:var(--border2); border-radius:3px; }
 
-/* ── Header ── */
+/* Header */
 header { background:var(--surface); border-bottom:1px solid var(--border); height:52px; display:flex; align-items:center; padding:0 20px; gap:20px; position:sticky; top:0; z-index:300; }
 .logo { font-size:15px; font-weight:700; letter-spacing:-0.3px; color:var(--text); display:flex; align-items:center; gap:7px; white-space:nowrap; }
 .logo-mark { width:26px; height:26px; background:var(--accent-light); border-radius:6px; display:flex; align-items:center; justify-content:center; }
@@ -53,7 +53,7 @@ header { background:var(--surface); border-bottom:1px solid var(--border); heigh
 .h-spacer { flex:1; }
 .h-actions { display:flex; gap:8px; align-items:center; }
 
-/* ── Buttons ── */
+/* Buttons */
 .btn { padding:6px 13px; border-radius:5px; border:1px solid var(--border2); background:var(--surface2); color:var(--text); cursor:pointer; font-size:12px; font-weight:500; letter-spacing:0.02em; transition:all 0.12s; display:inline-flex; align-items:center; gap:5px; white-space:nowrap; }
 .btn:hover { background:var(--surface3); border-color:var(--accent-light); }
 .btn:disabled { opacity:0.5; cursor:not-allowed; }
@@ -61,7 +61,7 @@ header { background:var(--surface); border-bottom:1px solid var(--border); heigh
 .btn-primary:hover { background:var(--accent-light); }
 .btn-sm { padding:4px 10px; font-size:11px; }
 
-/* ── Page Nav ── */
+/* Page Nav */
 .page-nav { background:var(--surface); border-bottom:1px solid var(--border); padding:0 20px; display:flex; align-items:center; gap:0; position:sticky; top:52px; z-index:290; }
 .page-tab { padding:11px 18px; font-size:12px; font-weight:600; color:var(--text3); background:none; border:none; border-bottom:2px solid transparent; cursor:pointer; transition:all 0.15s; letter-spacing:0.04em; text-transform:uppercase; }
 .page-tab:hover { color:var(--text); }
@@ -69,7 +69,7 @@ header { background:var(--surface); border-bottom:1px solid var(--border); heigh
 .page-nav-sep { width:1px; height:18px; background:var(--border); margin:0 4px; }
 .pn-right { margin-left:auto; display:flex; gap:8px; align-items:center; }
 
-/* ── Toolbar ── */
+/* Toolbar */
 .toolbar { background:var(--surface); border-bottom:1px solid var(--border); padding:8px 20px; display:flex; align-items:center; gap:10px; flex-wrap:wrap; position:sticky; top:88px; z-index:280; }
 .tab-group { display:flex; background:var(--bg); border:1px solid var(--border); border-radius:5px; overflow:hidden; }
 .tab { padding:5px 12px; cursor:pointer; font-size:12px; font-weight:500; color:var(--text2); border:none; background:none; transition:all 0.12s; white-space:nowrap; }
@@ -87,23 +87,23 @@ select.sort-sel { background:var(--bg); border:1px solid var(--border); border-r
 .view-btn.active,.view-btn:hover { background:var(--surface3); color:var(--text); border-color:var(--border2); }
 .view-btn.active { color:var(--accent-light); }
 
-/* ── Status bar ── */
+/* Status bar */
 .status-banner { margin:12px 20px 0; padding:8px 14px; background:var(--surface); border:1px solid var(--border); border-radius:6px; display:flex; align-items:center; gap:8px; font-size:12px; color:var(--text2); }
 .spinner { width:12px; height:12px; border:2px solid var(--border2); border-top-color:var(--accent-light); border-radius:50%; animation:spin 0.7s linear infinite; flex-shrink:0; }
 @keyframes spin { to { transform:rotate(360deg); } }
 .pulse { width:7px; height:7px; border-radius:50%; background:var(--green-bright); flex-shrink:0; animation:pulse 2s ease-in-out infinite; }
 @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.4; } }
 
-/* ── Main ── */
+/* Main */
 main { padding:12px 20px 100px; }
 .page { display:none; }
 .page.active { display:block; }
 
-/* ── Section header ── */
+/* Section header */
 .section-hd { font-size:10px; font-weight:600; color:var(--text3); text-transform:uppercase; letter-spacing:0.08em; margin:14px 0 8px; display:flex; align-items:center; gap:8px; }
 .section-hd::after { content:""; flex:1; height:1px; background:var(--border); }
 
-/* ── Top Picks strip ── */
+/* Top Picks strip */
 .picks-strip { display:grid; grid-template-columns:repeat(5,1fr); gap:8px; margin-bottom:20px; }
 .pick-card { background:var(--surface); border:1px solid var(--border); border-radius:6px; padding:10px 12px; cursor:pointer; transition:all 0.12s; position:relative; overflow:hidden; }
 .pick-card::before { content:""; position:absolute; top:0; left:0; right:0; height:2px; background:var(--accent-light); }
@@ -117,7 +117,7 @@ main { padding:12px 20px 100px; }
 .pick-score { font-size:11px; font-family:var(--mono); color:var(--text2); }
 .score-pip { width:28px; height:3px; border-radius:2px; flex-shrink:0; }
 
-/* ── TABLE VIEW ── */
+/* Table view */
 .stock-table-wrap { overflow-x:auto; border:1px solid var(--border); border-radius:7px; }
 table.stock-table { width:100%; border-collapse:collapse; font-size:12px; }
 table.stock-table thead th { background:var(--surface); color:var(--text3); font-weight:600; text-transform:uppercase; font-size:10px; letter-spacing:0.06em; padding:9px 12px; border-bottom:1px solid var(--border); text-align:left; white-space:nowrap; cursor:pointer; user-select:none; }
@@ -148,7 +148,7 @@ table.stock-table td { padding:8px 12px; vertical-align:middle; white-space:nowr
 .td-reason { color:var(--text2); font-size:11px; max-width:220px; overflow:hidden; text-overflow:ellipsis; cursor:help; }
 .td-spark { width:80px; }
 
-/* ── GRID VIEW ── */
+/* Grid view */
 .stock-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(230px,1fr)); gap:10px; }
 .stock-card { background:var(--surface); border:1px solid var(--border); border-radius:7px; padding:13px; cursor:pointer; transition:all 0.12s; }
 .stock-card:hover { border-color:var(--border2); background:var(--surface2); }
@@ -172,13 +172,13 @@ table.stock-table td { padding:8px 12px; vertical-align:middle; white-space:nowr
 .sc-signal { font-size:11px; color:var(--text3); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .sc-reason { font-size:10px; color:var(--text2); margin-top:5px; line-height:1.5; }
 
-/* ── Empty / Skeleton ── */
+/* Empty / Skeleton */
 .empty-state { grid-column:1/-1; text-align:center; padding:50px; color:var(--text3); }
 .empty-state h3 { font-size:15px; color:var(--text2); margin-bottom:6px; }
 .skel { background:linear-gradient(90deg,var(--surface) 0%,var(--surface3) 50%,var(--surface) 100%); background-size:200%; animation:shim 1.4s infinite; border-radius:3px; }
 @keyframes shim { to { background-position:-200% 0; } }
 
-/* ── AI Modal ── */
+/* AI Modal */
 .overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7); z-index:500; align-items:center; justify-content:center; padding:20px; }
 .overlay.open { display:flex; }
 .modal { background:var(--surface); border:1px solid var(--border2); border-radius:10px; width:100%; max-width:720px; max-height:85vh; overflow-y:auto; box-shadow:0 24px 64px rgba(0,0,0,0.6); }
@@ -206,7 +206,7 @@ table.stock-table td { padding:8px 12px; vertical-align:middle; white-space:nowr
 .macro-block h4 { font-size:10px; color:var(--accent-light); font-weight:700; text-transform:uppercase; letter-spacing:0.08em; margin-bottom:7px; }
 .macro-block p { font-size:12px; color:var(--text); line-height:1.6; }
 
-/* ── NEWS TAB ── */
+/* News tab */
 .news-toolbar { display:flex; align-items:center; gap:10px; padding:10px 0 14px; border-bottom:1px solid var(--border); margin-bottom:18px; flex-wrap:wrap; }
 .news-cat-tabs { display:flex; gap:4px; flex-wrap:wrap; }
 .news-cat-btn { padding:5px 13px; border-radius:20px; border:1px solid var(--border); background:var(--surface); color:var(--text2); font-size:11px; font-weight:500; cursor:pointer; transition:all 0.12s; white-space:nowrap; }
@@ -239,7 +239,7 @@ table.stock-table td { padding:8px 12px; vertical-align:middle; white-space:nowr
 .news-empty h3 { font-size:14px; color:var(--text2); margin-bottom:6px; }
 .news-loading { display:flex; align-items:center; gap:10px; padding:30px 0; color:var(--text2); font-size:12px; justify-content:center; grid-column:1/-1; }
 
-/* ── ANALYSIS PAGE ── */
+/* Analysis page */
 .analysis-page { max-width:900px; }
 .analysis-page-hd { display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; }
 .analysis-page-title { font-size:16px; font-weight:700; }
@@ -259,7 +259,7 @@ table.stock-table td { padding:8px 12px; vertical-align:middle; white-space:nowr
 .afc-value { font-size:12px; color:var(--text); line-height:1.55; }
 .afc-risk-val { font-size:12px; color:#ef9a9a; line-height:1.55; }
 
-/* ── Chatbot ── */
+/* Chatbot */
 .chat-fab { position:fixed; bottom:24px; right:24px; width:48px; height:48px; border-radius:50%; background:var(--accent); border:none; cursor:pointer; display:flex; align-items:center; justify-content:center; box-shadow:0 4px 20px rgba(21,101,192,0.5); transition:all 0.2s; z-index:400; }
 .chat-fab:hover { background:var(--accent-light); transform:scale(1.06); }
 .chat-fab svg { color:#fff; }
@@ -373,7 +373,7 @@ table.stock-table td { padding:8px 12px; vertical-align:middle; white-space:nowr
   </select>
   <div class="search-wrap">
     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-    <input class="search" id="searchInput" placeholder="Search ticker or name…" oninput="applyFilters()">
+    <input class="search" id="searchInput" placeholder="Search ticker or name..." oninput="applyFilters()">
   </div>
   <div class="h-spacer"></div>
   <div class="view-toggle">
@@ -389,15 +389,15 @@ table.stock-table td { padding:8px 12px; vertical-align:middle; white-space:nowr
 <!-- MAIN CONTENT -->
 <main>
 
-  <!-- ── MARKETS PAGE ── -->
+  <!-- Markets page -->
   <div id="page-markets" class="page active">
     <div id="statusBanner" class="status-banner" style="display:none">
       <div class="spinner" id="sBnrSpinner"></div>
       <div class="pulse" id="sBnrPulse" style="display:none"></div>
-      <span id="sBnrText">Establishing connection…</span>
+      <span id="sBnrText">Establishing connection...</span>
     </div>
     <div id="picksSection">
-      <div class="section-hd">Top Screener Results — Highest Combined Score</div>
+      <div class="section-hd">Top Screener Results (Highest Combined Score)</div>
       <div class="picks-strip" id="picksStrip"></div>
     </div>
     <div class="section-hd" id="allHd">All Stocks</div>
@@ -429,7 +429,7 @@ table.stock-table td { padding:8px 12px; vertical-align:middle; white-space:nowr
     </div>
   </div>
 
-  <!-- ── ANALYSIS PAGE ── -->
+  <!-- Analysis page -->
   <div id="page-analysis" class="page">
     <div class="analysis-page">
       <div class="analysis-page-hd">
@@ -452,7 +452,7 @@ table.stock-table td { padding:8px 12px; vertical-align:middle; white-space:nowr
     </div>
   </div>
 
-  <!-- ── NEWS PAGE ── -->
+  <!-- News page -->
   <div id="page-news" class="page">
     <div class="news-toolbar">
       <div class="news-cat-tabs" id="newsCatTabs">
@@ -472,7 +472,7 @@ table.stock-table td { padding:8px 12px; vertical-align:middle; white-space:nowr
     <div class="news-grid" id="newsGrid">
       <div class="news-loading">
         <div class="spinner"></div>
-        <span>Loading news feed…</span>
+        <span>Loading news feed...</span>
       </div>
     </div>
   </div>
@@ -514,7 +514,7 @@ table.stock-table td { padding:8px 12px; vertical-align:middle; white-space:nowr
   </div>
   <div class="chat-messages" id="chatMessages">
     <div class="chat-msg ai">
-      <div class="chat-bubble">Hello. I'm Mergeon AI — your financial research assistant. Ask me about any stock, market signals, or financial concepts.</div>
+      <div class="chat-bubble">Hello. I'm Mergeon AI, your financial research assistant. Ask me about any stock, market signals, or financial concepts.</div>
       <div class="chat-meta">Mergeon AI</div>
     </div>
   </div>
@@ -524,7 +524,7 @@ table.stock-table td { padding:8px 12px; vertical-align:middle; white-space:nowr
     <button class="chat-sugg-btn" onclick="sendSuggestion(this)">Explain RSI</button>
   </div>
   <div class="chat-input-row">
-    <textarea class="chat-input" id="chatInput" placeholder="Ask about stocks, signals, markets…" rows="1" onkeydown="chatKeydown(event)"></textarea>
+    <textarea class="chat-input" id="chatInput" placeholder="Ask about stocks, signals, markets..." rows="1" onkeydown="chatKeydown(event)"></textarea>
     <button class="chat-send" id="chatSendBtn" onclick="sendChat()">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
     </button>
@@ -532,7 +532,7 @@ table.stock-table td { padding:8px 12px; vertical-align:middle; white-space:nowr
 </div>
 
 <script>
-// ── State ──────────────────────────────────────────────────────────────────────
+// State
 let ALL_STOCKS   = [];
 let activeRegion = "All";
 let activeInd    = "All";
@@ -550,7 +550,7 @@ const INDUSTRIES = {
   India: ["All","IT","Banking","FMCG","Pharma","Auto","Infrastructure"],
 };
 
-// ── Helpers ────────────────────────────────────────────────────────────────────
+// Helpers
 function scoreClass(s) {
   if (s >= 72) return "sb-high";
   if (s >= 58) return "sb-good";
@@ -606,7 +606,7 @@ function relBadge(score) {
   return `<span class="rel-rel">RELEVANT</span>`;
 }
 
-// ── Page nav ───────────────────────────────────────────────────────────────────
+// Page nav
 function setPage(page) {
   currentPage = page;
   document.querySelectorAll(".page-tab").forEach(t => t.classList.toggle("active", t.textContent.trim().toLowerCase().startsWith(page)));
@@ -621,7 +621,7 @@ function setPage(page) {
   }
 }
 
-// ── Industry tabs ──────────────────────────────────────────────────────────────
+// Industry tabs
 function renderIndustryTabs() {
   const inds = INDUSTRIES[activeRegion] || ["All"];
   document.getElementById("industryTabs").innerHTML = inds.map(i =>
@@ -629,7 +629,7 @@ function renderIndustryTabs() {
   ).join("");
 }
 
-// ── Filtering ──────────────────────────────────────────────────────────────────
+// Filtering
 function applyFilters() {
   const q = document.getElementById("searchInput").value.toLowerCase().trim();
   const s = document.getElementById("sortSel").value;
@@ -661,7 +661,7 @@ function applyFilters() {
   document.getElementById("hAvg").textContent   = avg;
 }
 
-// ── Top Picks ──────────────────────────────────────────────────────────────────
+// Top Picks
 function renderPicks(top) {
   if (!top.length) { document.getElementById("picksSection").style.display="none"; return; }
   document.getElementById("picksSection").style.display = "";
@@ -682,7 +682,7 @@ function renderPicks(top) {
   }).join("");
 }
 
-// ── Table ──────────────────────────────────────────────────────────────────────
+// Table
 function renderTable(stocks) {
   const body = document.getElementById("tableBody");
   if (!stocks.length) {
@@ -722,7 +722,7 @@ function renderTable(stocks) {
   }).join("");
 }
 
-// ── Grid ───────────────────────────────────────────────────────────────────────
+// Grid
 function renderGrid(stocks) {
   const body = document.getElementById("gridBody");
   if (!stocks.length) {
@@ -760,7 +760,7 @@ function renderGrid(stocks) {
   }).join("");
 }
 
-// ── View / Region / Industry ───────────────────────────────────────────────────
+// View / Region / Industry
 function setView(v) {
   currentView = v;
   document.getElementById("tableView").style.display = v==="table" ? "" : "none";
@@ -783,7 +783,7 @@ function openStock(ticker) {
   window.open("https://finance.yahoo.com/quote/"+encodeURIComponent(ticker), "_blank", "noopener");
 }
 
-// ── Status banner ──────────────────────────────────────────────────────────────
+// Status banner
 function setStatus(loading, msg) {
   const b = document.getElementById("statusBanner");
   b.style.display = "flex";
@@ -792,7 +792,7 @@ function setStatus(loading, msg) {
   document.getElementById("sBnrText").textContent = msg;
 }
 
-// ── Data fetch ─────────────────────────────────────────────────────────────────
+// Data fetch
 async function fetchStocks() {
   try {
     const r = await fetch("/api/stocks");
@@ -808,7 +808,7 @@ async function fetchStocks() {
       clearInterval(pollTimer);
       pollTimer = setInterval(fetchStocks, 60_000);
     } else if (d.loading) {
-      setStatus(true, "Fetching live market data — approximately 30 seconds on first load…");
+      setStatus(true, "Fetching live market data, approximately 30 seconds on first load...");
       if (!loaded) { clearInterval(pollTimer); pollTimer = setInterval(fetchStocks, 3_000); }
     } else {
       setStatus(false, "No data available. Click Refresh to retry.");
@@ -820,17 +820,17 @@ async function fetchStocks() {
 
 async function manualRefresh() {
   const btn = document.getElementById("refreshBtn");
-  btn.disabled = true; btn.innerHTML = `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg> Refreshing…`;
+  btn.disabled = true; btn.innerHTML = `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg> Refreshing...`;
   await fetch("/api/refresh");
-  setStatus(true, "Refreshing market data…");
+  setStatus(true, "Refreshing market data...");
   loaded = false; clearInterval(pollTimer); pollTimer = setInterval(fetchStocks, 3_000);
   setTimeout(() => { btn.disabled=false; btn.innerHTML=`<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg> Refresh`; }, 2500);
 }
 
-// ── AI Analysis ────────────────────────────────────────────────────────────────
+// AI Analysis
 async function runAnalysis() {
   const content = document.getElementById("analysisContent");
-  content.innerHTML = `<div class="ai-status"><div class="ai-status-spinner"></div><div class="ai-status-label">Analysing market signals…</div><div class="ai-status-sub">Processing technical & fundamental data across top picks</div></div>`;
+  content.innerHTML = `<div class="ai-status"><div class="ai-status-spinner"></div><div class="ai-status-label">Analysing market signals...</div><div class="ai-status-sub">Processing technical & fundamental data across top picks</div></div>`;
   try {
     const r = await fetch("/api/analyze", {method:"POST",headers:{"Content-Type":"application/json"},body:"{}"});
     const d = await r.json();
@@ -881,12 +881,12 @@ async function openAnalysis() { setPage("analysis"); runAnalysis(); }
 function overlayClick(e) { if (e.target===document.getElementById("aiOverlay")) closeOverlay(); }
 function closeOverlay() { document.getElementById("aiOverlay").classList.remove("open"); }
 
-// ── News ───────────────────────────────────────────────────────────────────────
+// News
 async function loadNews(cat) {
   activeNewsCat = cat;
   document.querySelectorAll(".news-cat-btn").forEach(b => b.classList.toggle("active", b.dataset.cat===cat));
   const grid = document.getElementById("newsGrid");
-  grid.innerHTML = `<div class="news-loading"><div class="spinner"></div><span>Fetching ${cat} news…</span></div>`;
+  grid.innerHTML = `<div class="news-loading"><div class="spinner"></div><span>Fetching ${cat} news...</span></div>`;
   try {
     const r = await fetch("/api/news?category="+cat);
     const d = await r.json();
@@ -925,13 +925,13 @@ function renderNews(articles) {
   }).join("");
 }
 
-// ── Skeleton ───────────────────────────────────────────────────────────────────
+// Skeleton
 function showSkeleton() {
   document.getElementById("tableBody").innerHTML = Array(10).fill(0).map(()=>`
     <tr>${Array(12).fill(0).map(()=>`<td><div class="skel" style="height:12px;width:${40+Math.random()*40}px"></div></td>`).join("")}</tr>`).join("");
 }
 
-// ── Chatbot ────────────────────────────────────────────────────────────────────
+// Chatbot
 function toggleChat() {
   document.getElementById("chatPanel").classList.toggle("open");
 }
@@ -1001,11 +1001,11 @@ async function sendChat() {
   document.getElementById("chatInput").focus();
 }
 
-// ── Init ───────────────────────────────────────────────────────────────────────
+// Init
 document.addEventListener("DOMContentLoaded", () => {
   renderIndustryTabs();
   showSkeleton();
-  setStatus(true, "Establishing connection to market data feed…");
+  setStatus(true, "Establishing connection to market data feed...");
   fetchStocks();
 });
 document.addEventListener("keydown", e => { if (e.key==="Escape") closeOverlay(); });
